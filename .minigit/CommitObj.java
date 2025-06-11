@@ -1,9 +1,12 @@
-import java.sql.Time;
+import java.io.*;
 
 public class CommitObj {
     int commitId;
     CommitObj prevCommit;
-    Time time;
     String commitMessage;
     File[] commitedFiles;
+
+    CommitObj(){
+        
+    }
 }

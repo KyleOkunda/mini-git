@@ -86,6 +86,30 @@ public class Main {
                 }
             }
         }
+
+         if(args[0].equals("staging")){
+            if(args.length > 1){
+                System.out.println("To see the staging area only requires one commandline argument");
+            } else{
+                if(stagingArea.size() == 0){
+                    System.out.println("Staging area is empty");
+                } else{
+                    for(File f : Main.stagingArea){
+                        System.out.println(f.getName());
+                    }
+                }
+            }
+         }
+
+         if(args[0].equals("commit")){
+            if(args.length > 2){
+                System.out.println("Commiting requires only two commandline arguments.");
+            } else if(args.length == 1){
+                System.out.println("Please provide commit message");
+            } else{
+                CommitObj newCommit = new CommitObj();
+            }
+         }
        
     }
 
