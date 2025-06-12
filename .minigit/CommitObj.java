@@ -1,10 +1,10 @@
 import java.io.*;
 
 public class CommitObj {
-    int commitId;
-    CommitObj prevCommit;
-    String commitMessage;
-    File[] commitedFiles;
+    private int commitId;
+    private CommitObj prevCommit;
+    private String commitMessage;
+    private File[] commitedFiles;
 
     CommitObj(){
         
