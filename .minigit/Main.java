@@ -3,6 +3,7 @@ import java.util.*;
 public class Main {
     static Boolean isCommitted;
     static ArrayList<String> stagingArea = new ArrayList<>();
+    static ArrayList<File> fileStagingArea = new ArrayList<File>();
 
     //To be handled
     private static void parseDirectory(File f){
@@ -193,9 +194,47 @@ public class Main {
                 return;
             } else if(args.length == 1){
                 System.out.println("Please provide commit message.");
+                return;
             }
-            
-            CommitObj newCommit = new CommitObj();
+
+            try{ // Get the files to commit
+                BufferedReader reader = new BufferedReader(new FileReader(".minigit\\main.txt"));
+                reader.readLine();
+                String line2 = reader.readLine();
+                String[] fileNames = line2.split(" ");
+
+                String cdpath = System.getProperty("user.dir");
+                
+                File cd = new File(cdpath);
+                File[] files = null;
+                if(cd.exists() && cd.isDirectory()){
+                    files = cd.listFiles();
+                }
+
+                if(files != null){
+                    
+                    for(File file : files){
+                    
+                        for(int i = 0; i < fileNames.length; i++){
+                            if(file.getName().equals(fileNames[i])){
+                                
+                                Main.fileStagingArea.add(file);
+                            }
+                        }
+                
+                    }
+                } else{
+                    System.out.println("Please create files first");
+                }
+                
+
+                new CommitObj(args[1], Main.fileStagingArea);
+                
+
+
+            } catch(IOException e){
+                System.err.println("Error occured while fetching files to commit: \n" + e);
+            }
             
          }
        
