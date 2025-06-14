@@ -10,7 +10,7 @@ public class CommitObj {
     CommitObj(String message, ArrayList<File> files){
         
         //Assign attributes
-        commitMessage = message;
+        commitMessage = "\"" + message + "\"";
         commitedFiles = files;
 
         //Generate commitId
@@ -43,7 +43,7 @@ public class CommitObj {
                     String pathURL = ".minigit\\trackedFiles\\" + filename;
 
                     writerToTrackedFile = new BufferedWriter(new FileWriter(pathURL));
-                    //Read content of original
+                    //Read content of original and copy to the copy file
                     BufferedReader fileReader = new BufferedReader(new FileReader(file.getName()));
                     System.out.println("Reading " + file.getName());
                     Boolean stillReading = true;
@@ -51,6 +51,7 @@ public class CommitObj {
                     String line = fileReader.readLine();
                     if(line == null){
                         stillReading = false;
+                        fileReader.close();
                         break;
                     } else{
                         System.out.println(line);
@@ -62,54 +63,99 @@ public class CommitObj {
                 }
                 
                 writerToCommitObj.close();
+                reader.close();
                 
                 
             } else{ //If a previous commit exists
                 
-                //Fetch the previous commit, last element of the arrayList
+                //Fetch the previous commit, last element of the arrayList                
                 ArrayList<String> commitsArray = new ArrayList<>();
-                Boolean stillReading = true;
-                while(stillReading){
-                    String line = reader.readLine();
+                Boolean stillReadingCommitObj = true;
+                BufferedReader commitObjReader = new BufferedReader(new FileReader(".minigit\\commitObj.txt"));
+                while(stillReadingCommitObj){
+                    
+                    String line = commitObjReader.readLine();
+                    
                     if(line == null){
-                        stillReading = false;
+                        stillReadingCommitObj = false;
                         break;
-                    } else{
+                    } else{                        
                         commitsArray.add(line);
                     }
                 }
-                String prevCommit = commitsArray.get(commitsArray.size() - 1).split(" ")[1];
+                commitObjReader.close();
+                String prevCommit = commitsArray.get(commitsArray.size() - 1).split(" ")[0];
                 prevCommitId = Integer.parseInt(prevCommit);
-                commitId = prevCommitId++;
+                commitId = prevCommitId + 1;
                 reader.close();
 
-                BufferedWriter writerToCommitObj = new BufferedWriter(new FileWriter(".minigit\\commitObj.txt"));                
+                BufferedWriter writerToCommitObj = new BufferedWriter(new FileWriter(".minigit\\commitObj.txt"));
+                //Rewrite the original contents first
+                for(String commitLine : commitsArray){
+                    writerToCommitObj.write(commitLine);
+                    writerToCommitObj.newLine();
+                }
+                
                 writerToCommitObj.write(commitId + " ");
                 writerToCommitObj.write(prevCommitId + " ");
                 writerToCommitObj.write(commitMessage + " ");
-                writerToCommitObj.close();
-
-                BufferedWriter writerToTrackedFile = null;
-
-                for(File file : commitedFiles){
-                    String[] filenameParts = file.getName().split(".");
+               
+                
+                for(File file : commitedFiles){ //Create new files, copy of the committed file
+                    String[] filenameParts = file.getName().split("\\.");
+                    
                     String filename = filenameParts[0];
-                    String ext = filenameParts[1];
-                    filename = filename + Integer.toString(commitId);
+                    String ext ="." + filenameParts[1];
+                    filename = filename + "_" + Integer.toString(commitId);
                     filename = filename + ext;
                     writerToCommitObj.write(filename + " ");
 
                     String pathURL = ".minigit\\trackedFiles\\" + filename;
 
-                    writerToTrackedFile = new BufferedWriter(new FileWriter(pathURL));
+                    
 
-                }
-                writerToTrackedFile.close();
+                    //Read content of original and copy to the copy file
+                    BufferedWriter writerToTrackingFile = new BufferedWriter(new FileWriter(pathURL));                 
+                    BufferedReader trackedFileReader = new BufferedReader(new FileReader(file.getName()));
+                    System.out.println("Reading " + file.getName());
+                    Boolean stillReadingTrackedFile = true;
+                    while(stillReadingTrackedFile){   
+                        
+                        String line = trackedFileReader.readLine();
+                        if(line == null){
+                            stillReadingTrackedFile = false;
+                            trackedFileReader.close();
+                            break;
+                        } else{
+                            System.out.println(line);
+                            writerToTrackingFile.write(line);                        
+                            writerToTrackingFile.newLine();
+                        }
+                                        
+
+                    }
+                    writerToTrackingFile.close(); 
                 
+                             
             }
+            writerToCommitObj.close();
+        }
         } catch(IOException e){
             System.err.println("Error occured while making the commit: \n" + e);
         }
+
+        //Empty the staging area
+        Main.isCommitted = true;
+        Main.stagingArea.clear();
+        Main.fileStagingArea.clear();
+        try{
+            BufferedWriter mainTxtWriter = new BufferedWriter(new FileWriter(".minigit\\main.txt"));
+            mainTxtWriter.write(Boolean.toString(Main.isCommitted));
+            mainTxtWriter.close();
+        } catch(IOException e){
+            System.err.println("Error occured while emptying the staging area: \n" + e);
+        }
+
         
 
     }

@@ -9,7 +9,7 @@
       "name": "Launch Java Program",
       "request": "launch",
       "mainClass": "Main",
-      "args": ["commit", "heloo"]
+      "args": ["commit", "\"Added a new line of greeting\""]
     },
     {
       "type": "java",

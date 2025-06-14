@@ -1,2 +1,1 @@
-false
-hello.txt hithere.txt
+true

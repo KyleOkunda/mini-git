@@ -1,7 +1,7 @@
 import java.io.*;
 import java.util.*;
 public class Main {
-    static Boolean isCommitted;
+    static Boolean isCommitted = false;
     static ArrayList<String> stagingArea = new ArrayList<>();
     static ArrayList<File> fileStagingArea = new ArrayList<File>();
 
@@ -21,7 +21,7 @@ public class Main {
             } else{
                 // Fetch data from main.txt line 1
                 try{
-                    BufferedReader reader = new BufferedReader(new FileReader("main.txt"));
+                    BufferedReader reader = new BufferedReader(new FileReader(".minigit\\main.txt"));
                     String line = reader.readLine();
                     Main.isCommitted = Boolean.parseBoolean(line);
                     reader.close();
@@ -40,12 +40,15 @@ public class Main {
 
         //Handle second command, add
         if(args[0].equals("add")){
+            
             if(args.length > 2){
                 System.out.println("Adding to the staging area needs only two commandline arguemnts. \n Specify one file at a time or all of them using '*'");
             } else if( args.length == 1){
                 System.out.println("Adding to the staging requires two commandline arguments. \n" + //
                                         " Specify one file at a time or all of them using '*'");
             } else{
+
+                Main.isCommitted = false;
 
                 String cdpath = System.getProperty("user.dir");
                 assert cdpath != null : "cdpath is null";
@@ -68,18 +71,17 @@ public class Main {
 
                     //Write to the main.txt
                     try{
-                        BufferedReader reader = new BufferedReader(new FileReader("main.txt"));
-                        BufferedWriter writer = new BufferedWriter(new FileWriter("main.txt"));
+                        BufferedReader reader = new BufferedReader(new FileReader(".minigit\\main.txt"));
+                        BufferedWriter writer = new BufferedWriter(new FileWriter(".minigit\\main.txt"));
                         //First line is always the isCommitted value
-                        Main.isCommitted = Boolean.parseBoolean(reader.readLine());
                         writer.write(Boolean.toString(Main.isCommitted));
                         
                         writer.newLine();
                         
                         if(files != null){
-                            assert files != null : "Files is null";
+                            assert files != null : "files is null";
                         for(File file : files){
-                            if(file.isFile()){
+                            if(file.isFile() && !file.getName().equals(".gitignore")){
                                 writer.write(file.getName() + " ");
                                 
                             } else if(file.isDirectory()){
@@ -189,6 +191,7 @@ public class Main {
          }
 
          if(args[0].equals("commit")){
+            
             if(args.length > 2){
                 System.out.println("Commiting requires only two commandline arguments.");
                 return;
@@ -201,8 +204,13 @@ public class Main {
                 BufferedReader reader = new BufferedReader(new FileReader(".minigit\\main.txt"));
                 reader.readLine();
                 String line2 = reader.readLine();
-                String[] fileNames = line2.split(" ");
+                
+                if(line2 == null){
+                    System.out.println("Please add files to staging area before commiting");
+                    return;
+                }
 
+                String[] fileNames = line2.split(" ");
                 String cdpath = System.getProperty("user.dir");
                 
                 File cd = new File(cdpath);
