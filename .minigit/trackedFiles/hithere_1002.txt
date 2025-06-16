@@ -1,3 +1,0 @@
-hi there 1
-hi there 2
-new hi

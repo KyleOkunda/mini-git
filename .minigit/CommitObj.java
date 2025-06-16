@@ -28,21 +28,18 @@ public class CommitObj {
                 writerToCommitObj.write(prevCommitId + " ");
                 writerToCommitObj.write(commitMessage + " ");
                 
-
-                BufferedWriter writerToTrackedFile = new BufferedWriter(new FileWriter(".minigit\\commitObj.txt"));
-
+                
                 for(File file : commitedFiles){ //Create new files, copy of the committed file
-                    String[] filenameParts = file.getName().split("\\.");
                     
-                    String filename = filenameParts[0];
-                    String ext ="." + filenameParts[1];
-                    filename = filename + "_" + Integer.toString(commitId);
-                    filename = filename + ext;
-                    writerToCommitObj.write(filename + " ");
+                    writerToCommitObj.write(file.getName() + " ");
+                    File commitFolder = new File(".minigit\\commits");
+                    commitFolder.mkdir();
+                    File commitIdFolder = new File(commitFolder + "\\" + Integer.toString(commitId));
+                    commitIdFolder.mkdir();
+                    System.out.println(commitFolder.isDirectory());
+                    String pathURL = commitIdFolder + "\\" + file.getName();
 
-                    String pathURL = ".minigit\\trackedFiles\\" + filename;
-
-                    writerToTrackedFile = new BufferedWriter(new FileWriter(pathURL));
+                    BufferedWriter writerToTrackedFile = new BufferedWriter(new FileWriter(pathURL));
                     //Read content of original and copy to the copy file
                     BufferedReader fileReader = new BufferedReader(new FileReader(file.getName()));
                     System.out.println("Reading " + file.getName());
@@ -56,9 +53,11 @@ public class CommitObj {
                     } else{
                         System.out.println(line);
                         writerToTrackedFile.write(line);
+                        writerToTrackedFile.newLine();
                     }
-                    writerToTrackedFile.close();
+                    
                 }
+                writerToTrackedFile.close();
 
                 }
                 
@@ -102,15 +101,14 @@ public class CommitObj {
                
                 
                 for(File file : commitedFiles){ //Create new files, copy of the committed file
-                    String[] filenameParts = file.getName().split("\\.");
                     
-                    String filename = filenameParts[0];
-                    String ext ="." + filenameParts[1];
-                    filename = filename + "_" + Integer.toString(commitId);
-                    filename = filename + ext;
-                    writerToCommitObj.write(filename + " ");
-
-                    String pathURL = ".minigit\\trackedFiles\\" + filename;
+                     writerToCommitObj.write(file.getName() + " ");
+                    File commitFolder = new File(".minigit\\commits");
+                    commitFolder.mkdir();
+                    File commitIdFolder = new File(commitFolder + "\\" + Integer.toString(commitId));
+                    commitIdFolder.mkdir();
+                    System.out.println(commitFolder.isDirectory());
+                    String pathURL = commitIdFolder + "\\" + file.getName();
 
                     
 
