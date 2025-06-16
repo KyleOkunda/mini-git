@@ -8,6 +8,8 @@ public class CommitObj {
     private ArrayList<File> commitedFiles;
 
     CommitObj(String message, ArrayList<File> files){
+
+        message = message.replace(" ", ",");
         
         //Assign attributes
         commitMessage = "\"" + message + "\"";

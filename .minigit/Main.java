@@ -36,6 +36,7 @@ public class Main {
                     System.err.println("Error occured: " + "\n" + e);
                 }
             }
+            return;
         }
 
         //Handle second command, add
@@ -107,6 +108,7 @@ public class Main {
                     } catch(IOException e){
                         System.err.println("Error in adding to staging occured: " + "\n" + e);
                     }
+                    
                 } else{
 
                     boolean isAdded = false; //Checks if the selected file is added to the staging area
@@ -162,9 +164,10 @@ public class Main {
                         System.err.println("Error in adding to staging:" + "\n" + e);
                     }
                     
-                    
+                   
                 }
             }
+            return;
         }
 
          if(args[0].equals("staging")){
@@ -189,6 +192,7 @@ public class Main {
                         System.err.println("Error occured while accessing staging area: \n" + e);
                    }
             }
+            return;
          }
 
          if(args[0].equals("commit")){
@@ -244,7 +248,47 @@ public class Main {
             } catch(IOException e){
                 System.err.println("Error occured while fetching files to commit: \n" + e);
             }
+            return;
             
+         }
+
+
+         if(args[0].equals("log")){ //Viewing commit history
+                if(args.length > 1){
+                    System.out.println("Logging the commit history only requires one commandline argument");
+                } else{
+                    //Retrieve the commits from commitObj.txt
+                    try{
+                        ArrayList<String> commitArray = new ArrayList<>();
+                        Boolean stillReading = true;
+                        BufferedReader commitObjReader = new BufferedReader(new FileReader(".minigit\\commitObj.txt"));
+                        while(stillReading){
+                            String line = commitObjReader.readLine();
+                            if(line == null){
+                                break;
+                            } else{
+                                commitArray.add(line);
+                            }
+                        }
+                        commitObjReader.close();
+
+                        //Display the commits
+                        System.out.println("Commit history:");
+                        for(int i = commitArray.size() - 1; i >= 0; i--){
+                            String[] commit = commitArray.get(i).split(" ");
+                            String cid = commit[0];
+                            String message  = commit[2];
+                            message = message.replace(",", " ");
+                            System.out.println( cid + " " + message);
+
+                            
+                        }
+
+                    } catch(IOException e){
+                        System.err.println("Error while fetching commits: \n" + e);
+                    }
+                }
+                return;
          }
        
     }
