@@ -114,24 +114,25 @@ public class Main {
                         BufferedReader reader = new BufferedReader(new FileReader(".minigit\\main.txt"));
                         
                         // Read current values held
-                        String line1 = reader.readLine();
-                        Main.isCommitted = Boolean.parseBoolean(line1);
-                        String line2 = reader.readLine();                        
+                        reader.readLine();
+                        String line2 = reader.readLine();
                         reader.close();
 
                         // Rewrite the current values
                         BufferedWriter writer = new BufferedWriter(new FileWriter(".minigit\\main.txt"));
-                        writer.write(line1);
-                        writer.newLine();                                              
+                        writer.write(Boolean.toString(Main.isCommitted));
+                        writer.newLine();
                         
-                        String[] fileNames = line2.split(" ");
-                        for(String fileName : fileNames){
+                        if(line2 != null){
+                            String[] fileNames = line2.split(" ");
+                            for(String fileName : fileNames){
                             
                             if(!fileName.equals(args[1])){
                                 Main.stagingArea.add(fileName);
                                 writer.write(fileName + " ");
                             }                     
                            
+                        }
                         }
 
                         //Add the specified file
