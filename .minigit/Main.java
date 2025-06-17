@@ -290,6 +290,23 @@ public class Main {
                 }
                 return;
          }
+
+
+         if(args[0].equals("checkout")){
+            
+            if(args.length < 2){
+                System.out.println("Checking out requires two commandline arguments");
+            } else if(args.length > 2){
+                System.out.println("Checking out requires only two commandline arguments");
+            } else{
+
+                String cid = args[1]; //The commit id we are checking out
+                
+
+            }
+
+            return;
+         }
        
     }
 

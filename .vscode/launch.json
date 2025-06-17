@@ -6,6 +6,20 @@
   "configurations": [
     {
       "type": "java",
+      "name": "ScrollableEditorPane",
+      "request": "launch",
+      "mainClass": "ScrollableEditorPane",
+      "projectName": "MiniGit_63fb00bb"
+    },
+    {
+      "type": "java",
+      "name": "CheckoutWindow",
+      "request": "launch",
+      "mainClass": "CheckoutWindow",
+      "projectName": "MiniGit_63fb00bb"
+    },
+    {
+      "type": "java",
       "name": "Launch Java Program",
       "request": "launch",
       "mainClass": "Main",
