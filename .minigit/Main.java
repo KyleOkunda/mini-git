@@ -1,9 +1,13 @@
+import java.awt.*;
 import java.io.*;
 import java.util.*;
+
+import javax.swing.*;
 public class Main {
     static Boolean isCommitted = false;
     static ArrayList<String> stagingArea = new ArrayList<>();
     static ArrayList<File> fileStagingArea = new ArrayList<File>();
+    static Hashtable<String, String> checkout = new Hashtable<>();
 
     //To be handled
     private static void parseDirectory(File f){
@@ -13,6 +17,11 @@ public class Main {
     }
 
     public static void main(String[] args) {
+
+        if(args.length == 0){
+            System.out.println("Help");
+            return;
+        }
 
         //Handle first command, status
         if(args[0].equals("status")){
@@ -301,7 +310,50 @@ public class Main {
             } else{
 
                 String cid = args[1]; //The commit id we are checking out
-                
+                File commitDir = new File(".minigit\\commits\\" + cid);
+                if(commitDir.exists() && commitDir.isDirectory()){
+
+                    File[] files = commitDir.listFiles();
+                    if(files != null){
+
+                        for(File file : files){ //Copy the content of each file present
+                            if(file.isFile()){
+                                 try{
+                            BufferedReader commitReader = new BufferedReader(new FileReader(commitDir + "\\" + file.getName()));
+                            Boolean stillReading = true;
+                            ArrayList<String> fileContent = new ArrayList<>();
+                            while(stillReading){
+                                String line = commitReader.readLine();
+                                if(line == null){
+                                    break;                                   
+                                } else{
+                                    fileContent.add(line);
+                                }
+                            }
+                            commitReader.close();
+                            String wholeContent = "";
+                            for(int i = 0; i < fileContent.size(); i++){
+                                wholeContent = wholeContent + fileContent.get(i) + "\n";
+                            }
+
+                            Main.checkout.put(file.getName(), wholeContent);
+                            
+
+                        } catch(IOException e){
+                            System.err.println("Error occured while rewinding to the commit: \n" + e);
+                        }
+                            }
+                        }
+                        new Editor(Main.checkout);
+
+                    }else{
+                        System.out.println("Appears like this commit is empty. Please try making a new commit");
+                    }
+
+                } else{
+                    System.out.println("Invalid commit");
+                    return;
+                }
 
             }
 
