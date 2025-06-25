@@ -23,32 +23,91 @@ public class Main {
             return;
         }
 
-        //Handle first command, status
+        //Handle command, status
+        // Should show current branch, whether modified or unmodified, list untracked files
         if(args[0].equals("status")){
             if(args.length > 1){
                 System.out.println("Checking status only needs one command line argument");
             } else{
-                // Fetch data from main.txt line 1
+                
                 try{
-                    BufferedReader reader = new BufferedReader(new FileReader(".minigit\\main.txt"));
-                    String line = reader.readLine();
-                    Main.isCommitted = Boolean.parseBoolean(line);
-                    reader.close();
+                    //Get all files contents and compare to those of last commit
+                    //Get all files
+                    String cdpath = System.getProperty("user.dir");                    
+                    File cd = new File(cdpath);
+                    if(cd.isDirectory() && cd.exists()){
+                        File[] files = cd.listFiles();
+                        Boolean isModified = false;
+                        for(File file : files){
+                            if(file.isFile() && !file.getName().equals(".gitignore")){
+                                
+                                BufferedReader modFileReader = new BufferedReader(new FileReader(file.getName()));
+                                Boolean stillReading = true;
+                                // Read the modified file
+                                String modFileContent = "";
+                                while(stillReading){
+                                    String line = modFileReader.readLine();
+                                    if(line == null){                                        
+                                        break;
+                                    } else{
+                                        modFileContent = modFileContent + line;
+                                    }
+                                }
+                                modFileReader.close();
 
-                    if(Main.isCommitted){
-                        System.out.println("Working tree clean");
-                    } else{
-                        System.out.println("Changes present, please add to staging and commit");
+                                // Read file from last commit
+                                //Get last commit
+                                BufferedReader commitObjReader = new BufferedReader(new FileReader(".minigit\\commitObj.txt"));
+                                ArrayList<String> commitsArray = new ArrayList<>();
+                                while(stillReading){
+                                    String line = commitObjReader.readLine();
+                                    if(line == null){                                        
+                                        break;
+                                    } else{
+                                        commitsArray.add(line);
+                                    }
+                                }
+                                commitObjReader.close();
+                                String prevCommit = commitsArray.getLast().split(" ")[0];
+
+                                // Read contents
+                                BufferedReader commitFileReader = new BufferedReader(new FileReader(".minigit\\commits\\" + prevCommit + "\\" + file.getName()));
+                                String commitedContent = "";
+                                while(stillReading){
+                                    String line = commitFileReader.readLine();
+                                    if(line == null){                                        
+                                        break;
+                                    } else{
+                                        commitedContent = commitedContent + line;
+                                    }
+                                }
+                                commitFileReader.close();
+
+                                if(modFileContent.equals(commitedContent)){
+                                    isModified = false;
+                                    
+                                } else{
+                                    isModified = true;
+                                    break;
+                                }
+
+                            }
+                        }
+                        if(isModified){
+                            System.out.println("Changes present. \n Add to staging and commit.");
+                        } else{
+                            System.out.println("Working Tree Clean. \n No changes to commit.");
+                        }
                     }
 
                 } catch(IOException e){
-                    System.err.println("Error occured: " + "\n" + e);
+                    System.err.println("Error occured while checking status: " + "\n" + e);
                 }
             }
             return;
         }
 
-        //Handle second command, add
+        //Handle command, add
         if(args[0].equals("add")){
             
             if(args.length > 2){

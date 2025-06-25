@@ -6,37 +6,10 @@
   "configurations": [
     {
       "type": "java",
-      "name": "ScrollableEditorPane",
-      "request": "launch",
-      "mainClass": "ScrollableEditorPane",
-      "projectName": "MiniGit_63fb00bb"
-    },
-    {
-      "type": "java",
-      "name": "CheckoutWindow",
-      "request": "launch",
-      "mainClass": "CheckoutWindow",
-      "projectName": "MiniGit_63fb00bb"
-    },
-    {
-      "type": "java",
       "name": "Launch Java Program",
       "request": "launch",
       "mainClass": "Main",
-      "args": ["log"]
-    },
-    {
-      "type": "java",
-      "name": "Current File",
-      "request": "launch",
-      "mainClass": "${file}"
-    },
-    {
-      "type": "java",
-      "name": "Main",
-      "request": "launch",
-      "mainClass": "Main",
-      "projectName": "MiniGit_63fb00bb"
+      "args": ["staging"]
     }
   ]
 }
