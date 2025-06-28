@@ -1,4 +1,5 @@
 import java.io.*;
+import java.nio.file.*;
 import java.util.*;
 
 public class CommitObj {
@@ -21,6 +22,7 @@ public class CommitObj {
         try{
             BufferedReader reader = new BufferedReader(new FileReader(".minigit\\commitObj.txt"));
             String line1 = reader.readLine();
+            reader.close();
             
             if(line1 == null){ //If there is no previous commit
                 commitId = 1000;
@@ -87,8 +89,7 @@ public class CommitObj {
                 commitObjReader.close();
                 String prevCommit = commitsArray.get(commitsArray.size() - 1).split(" ")[0];
                 prevCommitId = Integer.parseInt(prevCommit);
-                commitId = prevCommitId + 1;
-                reader.close();
+                commitId = prevCommitId + 1;                
 
                 BufferedWriter writerToCommitObj = new BufferedWriter(new FileWriter(".minigit\\commitObj.txt"));
                 //Rewrite the original contents first
@@ -101,21 +102,37 @@ public class CommitObj {
                 writerToCommitObj.write(prevCommitId + " ");
                 writerToCommitObj.write(commitMessage + " ");
                
-                
+                // Create a folder for this commit                
+                Path path = Paths.get(".minigit", "commits", Integer.toString(commitId));
+                try{
+
+                    Files.createDirectory(path);
+                    System.out.println("Folder created successfully");
+
+                } catch(IOException e){
+                    System.err.println("Error while creating new dir: \n" + e);
+                    e.printStackTrace();
+                }
+
                 for(File file : commitedFiles){ //Create new files, copy of the committed file
                     
-                     writerToCommitObj.write(file.getName() + " ");
-                    File commitFolder = new File(".minigit\\commits");
-                    commitFolder.mkdir();
-                    File commitIdFolder = new File(commitFolder + "\\" + Integer.toString(commitId));
-                    commitIdFolder.mkdir();
-                    System.out.println(commitFolder.isDirectory());
-                    String pathURL = commitIdFolder + "\\" + file.getName();
+                    writerToCommitObj.write(file.getName() + " ");
+                    Path pathURL = Paths.get(".minigit", "commits", Integer.toString(commitId), file.getName());
+                    try{
 
-                    
+                        Files.createFile(pathURL);
+                        System.out.println("Folder created successfully");
+
+                    } catch(IOException e){
+                        System.err.println("Error while creating new file: \n" + e);
+                        e.printStackTrace();
+                    }
+                    //File newFile = new File(pathURL);
+                    //newFile.createNewFile();
 
                     //Read content of original and copy to the copy file
-                    BufferedWriter writerToTrackingFile = new BufferedWriter(new FileWriter(pathURL));                 
+                    String filepath = pathURL.toString();
+                    BufferedWriter writerToTrackingFile = new BufferedWriter(new FileWriter(filepath));                 
                     BufferedReader trackedFileReader = new BufferedReader(new FileReader(file.getName()));
                     System.out.println("Reading " + file.getName());
                     Boolean stillReadingTrackedFile = true;

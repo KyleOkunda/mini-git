@@ -1,3 +1,4 @@
 1000 null "Testing,new,folders" hello.txt hithere.txt 
 1001 1000 "Deleted,some,lines,of,text" hello.txt hithere.txt 
 1002 1001 "Testing,comma,in,commit,message" hello.txt hithere.txt 
+1003 1002 "Newly,added,commit" hello.txt hithere.txt 

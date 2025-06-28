@@ -9,7 +9,7 @@
       "name": "Launch Java Program",
       "request": "launch",
       "mainClass": "Main",
-      "args": ["staging"]
+      "args": ["commit", "Newly added commit"]
     }
   ]
 }
