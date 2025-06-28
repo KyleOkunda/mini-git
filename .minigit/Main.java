@@ -1,8 +1,5 @@
-import java.awt.*;
 import java.io.*;
 import java.util.*;
-
-import javax.swing.*;
 public class Main {
     static Boolean isCommitted = false;
     static ArrayList<String> stagingArea = new ArrayList<>();
@@ -71,8 +68,17 @@ public class Main {
                                 String prevCommit = commitsArray.getLast().split(" ")[0];
 
                                 // Read contents
+                                //Check if file exists in previous commit
+                                File commitFile = new File(".minigit\\commits\\" + prevCommit + "\\" + file.getName());
+                                if(!commitFile.isFile()){
+                                    System.out.println();
+                                    System.out.println("Untracked file: " + file.getName());
+                                    System.out.println();
+                                    continue;
+                                }
                                 BufferedReader commitFileReader = new BufferedReader(new FileReader(".minigit\\commits\\" + prevCommit + "\\" + file.getName()));
                                 String commitedContent = "";
+                                                                  
                                 while(stillReading){
                                     String line = commitFileReader.readLine();
                                     if(line == null){                                        
@@ -82,13 +88,14 @@ public class Main {
                                     }
                                 }
                                 commitFileReader.close();
+                                
 
                                 if(modFileContent.equals(commitedContent)){
                                     isModified = false;
                                     
                                 } else{
                                     isModified = true;
-                                    break;
+                                    //break;
                                 }
 
                             }
@@ -102,7 +109,7 @@ public class Main {
 
                 } catch(IOException e){
                     System.err.println("Error occured while checking status: " + "\n" + e);
-                }
+                } 
             }
             return;
         }
@@ -192,25 +199,13 @@ public class Main {
                         BufferedWriter writer = new BufferedWriter(new FileWriter(".minigit\\main.txt"));
                         writer.write(Boolean.toString(Main.isCommitted));
                         writer.newLine();
-                        
-                        if(line2 != null){
-                            String[] fileNames = line2.split(" ");
-                            for(String fileName : fileNames){
-                            
-                            if(!fileName.equals(args[1])){
-                                Main.stagingArea.add(fileName);
-                                writer.write(fileName + " ");
-                            }                     
-                           
-                        }
-                        }
 
                         //Add the specified file
                         if(files != null){
                         for(File file : files){
-                            if(file.isFile() && file.getName().equals(args[1])){
+                            if(file.isFile() && !file.getName().equals(".gitignore")){
                                 isAdded = true;
-                                writer.write(file.getName());
+                                writer.write(file.getName() + " ");
                                 Main.stagingArea.add(file.getName());
                             }
                         }
@@ -369,7 +364,7 @@ public class Main {
             } else{
 
                 String cid = args[1]; //The commit id we are checking out
-                File commitDir = new File(".minigit\\commits\\" + cid);
+                File commitDir = new File("commits\\" + cid);
                 if(commitDir.exists() && commitDir.isDirectory()){
 
                     File[] files = commitDir.listFiles();
