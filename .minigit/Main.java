@@ -90,13 +90,10 @@ public class Main {
                                 commitFileReader.close();
                                 
 
-                                if(modFileContent.equals(commitedContent)){
-                                    isModified = false;
-                                    
-                                } else{
+                                if(!modFileContent.equals(commitedContent)){
                                     isModified = true;
-                                    //break;
-                                }
+                                    
+                                } 
 
                             }
                         }

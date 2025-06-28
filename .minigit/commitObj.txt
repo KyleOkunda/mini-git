@@ -3,3 +3,5 @@
 1002 1001 "Testing,comma,in,commit,message" hello.txt hithere.txt 
 1003 1002 "Newly,added,commit" hello.txt hithere.txt 
 1004 1003 "New,commit,after,debugging" hello.txt hithere.txt 
+1005 1004 "Added,a,new,file,to,be,tracked" hello.txt hithere.txt newfile.txt 
+1006 1005 "Added,a,new,line,to,the,new,file" hello.txt hithere.txt newfile.txt 
