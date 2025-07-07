@@ -22,10 +22,10 @@ public class Editor {
     JTextArea editor;
     static ArrayList<String> buttonList;
     
-     Editor(Hashtable<String, String> checkout){
+     Editor(Hashtable<String, String> checkout, String commitId){
         int windowWidth = 1200;
         int windowHeight = 800;
-        frame = new JFrame("New Editor Window");     
+        frame = new JFrame("Viewing commit " + commitId + " on branch " + Main.getBranchName());     
 
         sidebar = new JPanel();
         sidebar.setBounds(0, 0, (windowWidth / 5), windowHeight);

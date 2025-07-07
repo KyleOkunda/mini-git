@@ -12,6 +12,15 @@ public class CommitObj {
         String currentDirPath = System.getProperty("user.dir");
 
         message = message.replace(" ", ",");
+
+        //Get branch name
+        String branchName = Main.getBranchName();
+        String branchRefFile = "";
+        if(branchName.equals("master")){
+               branchRefFile = "commitObj.txt";
+        } else{
+               branchRefFile = branchName + "Obj.txt";
+        }
         
         //Assign attributes
         commitMessage = "\"" + message + "\"";
@@ -21,13 +30,13 @@ public class CommitObj {
         //Check if a previous commit exists then increment its id
         //If none exist set default to 1000
         try{
-            BufferedReader reader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\commitObj.txt"));
+            BufferedReader reader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\" + branchRefFile));
             String line1 = reader.readLine();
             
             if(line1 == null){ //If there is no previous commit
                 commitId = 1000;
                 prevCommitId = null;
-                BufferedWriter writerToCommitObj = new BufferedWriter(new FileWriter(currentDirPath + "\\.minigit\\commitObj.txt"));                
+                BufferedWriter writerToCommitObj = new BufferedWriter(new FileWriter(currentDirPath + "\\.minigit\\" + branchRefFile));                
                 writerToCommitObj.write(commitId + " ");
                 writerToCommitObj.write(prevCommitId + " ");
                 writerToCommitObj.write(commitMessage + " ");
@@ -36,7 +45,7 @@ public class CommitObj {
                 for(File file : commitedFiles){ //Create new files, copy of the committed file
                     
                     writerToCommitObj.write(file.getName() + " ");
-                    File commitFolder = new File( currentDirPath + "\\.minigit\\commits");
+                    File commitFolder = new File( currentDirPath + "\\.minigit\\" + branchName);
                     commitFolder.mkdir();
                     File commitIdFolder = new File(commitFolder + "\\" + Integer.toString(commitId));
                     commitIdFolder.mkdir();                    
@@ -45,7 +54,7 @@ public class CommitObj {
                     BufferedWriter writerToTrackedFile = new BufferedWriter(new FileWriter(pathURL));
                     //Read content of original and copy to the copy file
                     BufferedReader fileReader = new BufferedReader(new FileReader(file.getName()));
-                    System.out.println("Reading " + file.getName());
+                    //System.out.println("Reading " + file.getName());
                     Boolean stillReading = true;
                     while(stillReading){
                     String line = fileReader.readLine();
@@ -54,7 +63,7 @@ public class CommitObj {
                         fileReader.close();
                         break;
                     } else{
-                        System.out.println(line);
+                        //System.out.println(line);
                         writerToTrackedFile.write(line);
                         writerToTrackedFile.newLine();
                     }
@@ -73,7 +82,7 @@ public class CommitObj {
                 //Fetch the previous commit, last element of the arrayList                
                 ArrayList<String> commitsArray = new ArrayList<>();
                 Boolean stillReadingCommitObj = true;
-                BufferedReader commitObjReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\commitObj.txt"));
+                BufferedReader commitObjReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\" + branchRefFile));
                 while(stillReadingCommitObj){
                     
                     String line = commitObjReader.readLine();
@@ -91,7 +100,7 @@ public class CommitObj {
                 commitId = prevCommitId + 1;
                 reader.close();
 
-                BufferedWriter writerToCommitObj = new BufferedWriter(new FileWriter( currentDirPath + "\\.minigit\\commitObj.txt"));
+                BufferedWriter writerToCommitObj = new BufferedWriter(new FileWriter( currentDirPath + "\\.minigit\\" + branchRefFile));
                 //Rewrite the original contents first
                 for(String commitLine : commitsArray){
                     writerToCommitObj.write(commitLine);
@@ -106,7 +115,7 @@ public class CommitObj {
                 for(File file : commitedFiles){ //Create new files, copy of the committed file
                     
                     writerToCommitObj.write(file.getName() + " ");
-                    File commitFolder = new File( currentDirPath + "\\.minigit\\commits");
+                    File commitFolder = new File( currentDirPath + "\\.minigit\\" + branchName);
                     commitFolder.mkdir();
                     File commitIdFolder = new File(commitFolder + "\\" + Integer.toString(commitId));
                     commitIdFolder.mkdir();                    
@@ -147,8 +156,12 @@ public class CommitObj {
         Main.stagingArea.clear();
         Main.fileStagingArea.clear();
         try{
+            String branch = Main.getBranchName();
             BufferedWriter mainTxtWriter = new BufferedWriter(new FileWriter(currentDirPath + "\\.minigit\\main.txt"));
             mainTxtWriter.write(Boolean.toString(Main.isCommitted));
+            mainTxtWriter.newLine();
+            mainTxtWriter.newLine();
+            mainTxtWriter.write(branch);
             mainTxtWriter.close();
         } catch(IOException e){
             System.err.println("Error occured while emptying the staging area: \n" + e);

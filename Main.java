@@ -5,6 +5,59 @@ public class Main {
     static ArrayList<String> stagingArea = new ArrayList<>();
     static ArrayList<File> fileStagingArea = new ArrayList<File>();
     static Hashtable<String, String> checkout = new Hashtable<>();
+    static String branchName = "master";
+    
+    static String getBranchName(){
+        String currentDirPath = System.getProperty("user.dir");
+        String branch = currentDirPath + "\\.minigit\\main.txt";
+        
+        try{
+
+            BufferedReader mainFileReader = new BufferedReader(new FileReader(branch));
+            mainFileReader.readLine();
+            mainFileReader.readLine();
+            branch = mainFileReader.readLine();
+            mainFileReader.close();
+            
+            
+        } catch(IOException e){
+            System.err.println("Error while getting branch name: \n + e");
+        }
+
+        return branch;
+    }
+
+    static String getBranchCommitObjects(String branch){
+        String currentDirPath = System.getProperty("user.dir");
+        String branchRef = "";
+        if(branch.equals("master")){
+            branchRef = "commitObj.txt";
+        } else{
+            branchRef = branch + "Obj.txt";
+        }
+
+        //Read the reference file
+        String commitObjects = "";
+        try{
+            Boolean stillReading = true;
+            BufferedReader refFileReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\" + branchRef));
+            
+            while (stillReading) {
+                String line = refFileReader.readLine();
+                if(line == null){
+                    break;
+                } else{
+                    commitObjects = commitObjects + line  + "\n";
+                }
+                
+            }
+            refFileReader.close();
+        } catch(IOException e){
+            System.err.println("Error while reading branch reference file of branch " + branch + ":\n" + e);
+        }
+        return commitObjects;
+        
+    }
 
     //To be handled
     private static void parseDirectory(File f){
@@ -18,7 +71,14 @@ public class Main {
         String currentDirPath = System.getProperty("user.dir");
 
         if(args.length == 0){
-            System.out.println("Help");
+            System.out.println("Here are valid commands: \n ");
+            System.out.println("status: \n To check out the current state of the project");
+            System.out.println("add:\n To add files to the staging area");
+            System.out.println("staging: \n To view files in the staging area");
+            System.out.println("commit: \n To create a snapshot of the state of the project");
+            System.out.println("log: \n To view commit history");
+            System.out.println("checkout: \n To checkout a previous commit");
+            
             return;
         }
 
@@ -77,14 +137,14 @@ public class Main {
 
                                 // Read contents
                                 //Check if file exists in previous commit
-                                File commitFile = new File(currentDirPath + "\\.minigit\\commits\\" + prevCommit + "\\" + file.getName());
+                                File commitFile = new File(currentDirPath + "\\.minigit\\"+ Main.branchName+ "\\" + prevCommit + "\\" + file.getName());
                                 if(!commitFile.isFile()){
                                     System.out.println();
                                     System.out.println("Untracked file: " + file.getName());
                                     System.out.println();
                                     continue;
                                 }
-                                BufferedReader commitFileReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\commits\\" + prevCommit + "\\" + file.getName()));
+                                BufferedReader commitFileReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\"+ Main.branchName+ "\\"  + prevCommit + "\\" + file.getName()));
                                 String commitedContent = "";
                                                                   
                                 while(stillReading){
@@ -148,10 +208,11 @@ public class Main {
                     System.out.println("Directory does not exist or it is not a directory");
                 }
 
-                if(args[1].equals("*")){ // Add all files to the stagingArea arraylist
+                if(args[1].equals(".")){ // Add all files to the stagingArea arraylist
 
                     //Write to the main.txt
                     try{
+                        String branch = Main.getBranchName();
                         BufferedReader reader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\main.txt"));
                         BufferedWriter writer = new BufferedWriter(new FileWriter(currentDirPath + "\\.minigit\\main.txt"));
                         //First line is always the isCommitted value
@@ -169,6 +230,8 @@ public class Main {
                                 parseDirectory(file);
                             }
                         }
+                            writer.newLine();
+                            writer.write(branch);
                             writer.close();
                         }
                      //Set the stagingArea arrayList
@@ -245,8 +308,8 @@ public class Main {
                  try(BufferedReader reader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\main.txt"))){
                         reader.readLine();
                         String line2 = reader.readLine();                        
-                        assert line2 == null : "Line 2 is returning null";
-                        if(line2 == null){
+                        
+                        if(line2.equals(null) || line2.equals("")){
                             System.out.println("Staging area is empty");
                         } else{
                             String[] fileNames = line2.split(" ");
@@ -329,7 +392,15 @@ public class Main {
                     try{
                         ArrayList<String> commitArray = new ArrayList<>();
                         Boolean stillReading = true;
-                        BufferedReader commitObjReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\commitObj.txt"));
+                        String branchRefFile = "";
+                        Main.branchName = Main.getBranchName();
+                        //System.out.println(Main.branchName);
+                        if(Main.branchName.equals("master")){
+                            branchRefFile = "commitObj.txt";
+                        } else{
+                            branchRefFile = Main.branchName + "Obj.txt";
+                        }
+                        BufferedReader commitObjReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\" + branchRefFile));
                         while(stillReading){
                             String line = commitObjReader.readLine();
                             if(line == null){
@@ -346,7 +417,7 @@ public class Main {
                         }
 
                         //Display the commits
-                        System.out.println("Commit history:");
+                        System.out.println("Commit history on branch " + Main.getBranchName() + ":");
                         for(int i = commitArray.size() - 1; i >= 0; i--){
                             String[] commit = commitArray.get(i).split(" ");
                             String cid = commit[0];
@@ -374,7 +445,9 @@ public class Main {
             } else{
 
                 String cid = args[1]; //The commit id we are checking out
-                File commitDir = new File(currentDirPath + "\\.minigit\\commits\\" + cid);
+                String branch = Main.getBranchName();
+                File commitDir = new File(currentDirPath + "\\.minigit\\"+ branch + "\\"  + cid);
+                //System.out.println(commitDir.getAbsolutePath());
                 if(commitDir.exists() && commitDir.isDirectory()){
 
                     File[] files = commitDir.listFiles();
@@ -408,7 +481,7 @@ public class Main {
                         }
                             }
                         }
-                        new Editor(Main.checkout);
+                        new Editor(Main.checkout, cid);
 
                     }else{
                         System.out.println("Appears like this commit is empty. Please try making a new commit");
@@ -421,6 +494,130 @@ public class Main {
 
             }
 
+            return;
+         }
+
+         if(args[0].equals("branch")){
+            if(args.length > 2){
+                System.out.println("Branching only takes two command line arguments");
+            } else if(args.length == 1){
+                // Display all branches and show current branch
+                String branch = Main.getBranchName();
+                try{
+                    BufferedReader branchesReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\branches.txt"));
+                    Boolean stillReading = true;
+                    while(stillReading){
+                        String line = branchesReader.readLine();
+                        if(line == null){
+                            break;
+                        } else{
+                            if(line.equals(branch)){
+                                System.out.println(line + "  <---- Head");
+                                continue;
+                            } else{
+                                System.out.println(line);
+                            }
+                        }
+                    }
+                    branchesReader.close();
+                } catch(IOException e){
+                    System.err.println("Error while fetching branches: \n" + e);
+                }
+            } else{
+
+                if(!Main.getBranchName().equals("master")){
+                    System.out.println("Branch not created.\n Must  be on master to create a new branch. \n Please commit and merge to create a new branch.");
+
+                    return;
+                }
+
+                // Add branch to the branches.txt file
+                try{
+                    BufferedWriter branchesFileWriter = new BufferedWriter(new FileWriter(currentDirPath + "\\.minigit\\branches.txt"));
+                    branchesFileWriter.write("master \n");
+                    branchesFileWriter.write(args[1]);
+                    branchesFileWriter.close();
+                } catch(IOException e){
+                    System.err.println("Error while addding to branches list: \n" + e);
+                }
+
+                // Add commit history for this branch
+                String branchCommitPath = currentDirPath + "\\.minigit\\" + args[1];
+                String branchRef = args[1] + "Obj.txt";
+                String branchRefPath = currentDirPath + "\\.minigit\\" + branchRef;
+                File branchCommitDir = new File(branchCommitPath);
+                File branchReFile = new File(branchRefPath);
+                
+                try{
+                    branchReFile.createNewFile();
+                    branchCommitDir.mkdir();
+                } catch(IOException e){
+                    System.err.println("Error occured while creating branch reference file: \n" + e);
+                }
+
+                //Write to branch reference file
+                try{
+                    BufferedWriter branchRefWriter = new BufferedWriter(new FileWriter(branchRefPath));
+                    String branchObjects = Main.getBranchCommitObjects(Main.getBranchName());
+                    branchRefWriter.write(branchObjects);
+                    branchRefWriter.close();
+                } catch(IOException e){
+                    System.err.println("Error while writing to branch reference file: \n" + e);
+                }
+
+                //Copy actual commit content from master to the new branch
+                // from /.minigit/master/1000 ... to /.minigit/newBranch/1000
+                
+                //Create reader of the master branch and writer for the new branch
+                try{
+                    String master = currentDirPath + "\\.minigit\\master";
+                    File masterCommits = new File(master);
+                    File[] commitDirs = null;
+                    if(masterCommits.isDirectory()){
+                        commitDirs = masterCommits.listFiles();
+                        for(File commitDir : commitDirs){
+                            String dupBranchCommitDirPath = branchCommitPath + "\\" + commitDir.getName();
+                            File dupBranchCommitDir = new File(dupBranchCommitDirPath);
+                            dupBranchCommitDir.mkdir();
+
+                            File[] commitDirFiles = commitDir.listFiles();
+                            for(File commitDirFile : commitDirFiles){
+                                String filename = commitDirFile.getName();
+                                BufferedReader commitDirFileReader = new BufferedReader(new FileReader(commitDirFile.getAbsolutePath()));
+                                Boolean stillReading = true;
+                                String contentToCopy = "";
+                                while(stillReading){
+                                    String line = commitDirFileReader.readLine();
+                                    if(line == null){
+                                        break;
+                                    } else{
+                                        contentToCopy = contentToCopy + line + "\n";
+                                    }
+                                }
+                                commitDirFileReader.close();
+
+                                String branchFilePath = dupBranchCommitDirPath + "\\" + filename;
+                                File branchFile = new File(branchFilePath);
+                                branchFile.createNewFile();
+                                BufferedWriter branchFileWriter = new BufferedWriter(new FileWriter(branchFile.getAbsolutePath()));
+                                branchFileWriter.write(contentToCopy);
+                                branchFileWriter.close();
+
+                            }
+
+
+                        }
+
+                    } else{
+                        System.err.println("Error occured while accesing the master directory");
+                        return;
+                    }
+                } catch(IOException e){
+                    System.err.println("Error while contents from master to new branch: " + args[1] + "\n" + e);
+                }
+
+
+            }
             return;
          }
        
@@ -449,19 +646,38 @@ public class Main {
             if(args.length == 0){
                 System.out.println("Help");
             }else if(args[0].equals("init")){
-                System.out.println("Initializing repo...");
+                System.out.println("Initializing repo... \n");
                 String cdpath = currentDir.getAbsolutePath();
                 String vcspath = cdpath + "\\.minigit";
                 String commitObj = vcspath + "\\commitObj.txt";
                 String maintxt = vcspath + "\\main.txt";
+                String branchTxt = vcspath + "\\branches.txt";
                 File vcsDir = new File(vcspath);
                 File commitObjFile = new File(commitObj);
                 File maintxtFile = new File(maintxt);
+                File branchTxtFile = new File(branchTxt);
                 
                 try{
-                    System.out.println(vcsDir.mkdir());
-                    System.out.println(commitObjFile.createNewFile());
-                    System.out.println(maintxtFile.createNewFile());
+                    vcsDir.mkdir();
+                    commitObjFile.createNewFile();
+                    maintxtFile.createNewFile();
+                    branchTxtFile.createNewFile();
+
+                    //Write to the main.txt
+                    BufferedWriter mainWriter  = new BufferedWriter(new FileWriter(currentDir + "\\.minigit\\main.txt"));
+                    mainWriter.write("false \n");
+                    mainWriter.newLine();
+                    mainWriter.write("master");
+                    mainWriter.close();
+
+                    BufferedWriter branchWriter = new BufferedWriter(new FileWriter(currentDir + "\\.minigit\\branches.txt"));
+                    branchWriter.write("master");
+                    branchWriter.close();
+
+
+                    //Set branch to master
+                    Main.branchName = "master";
+                    System.out.println("Successfully intiliazed repo. \n Currently on branch: " + Main.branchName);
                 } catch(IOException e){
                     System.err.println("Error while creating required files: \n" + e);
                 }
