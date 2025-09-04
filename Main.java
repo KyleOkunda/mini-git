@@ -65,38 +65,21 @@ public class Main {
         
         
     }
-    private static void isRepoFunction(String[] args){
 
-        
-        String currentDirPath = System.getProperty("user.dir");
+    static Boolean getStatus(){
 
-        if(args.length == 0){
-            System.out.println("Here are valid commands: \n ");
-            System.out.println("status: \n To check out the current state of the project");
-            System.out.println("add:\n To add files to the staging area");
-            System.out.println("staging: \n To view files in the staging area");
-            System.out.println("commit: \n To create a snapshot of the state of the project");
-            System.out.println("log: \n To view commit history");
-            System.out.println("checkout: \n To checkout a previous commit");
+        Boolean isModified = false;
+                    
+        try{
             
-            return;
-        }
-
-        //Handle command, status
-        // Should show current branch, whether modified or unmodified, list untracked files
-        if(args[0].equals("status")){
-            if(args.length > 1){
-                System.out.println("Checking status only needs one command line argument");
-            } else{
-                
-                try{
                     //Get all files contents and compare to those of last commit
                     //Get all files
+                    String currentDirPath = System.getProperty("user.dir");
                     String cdpath = System.getProperty("user.dir");                    
                     File cd = new File(cdpath);
                     if(cd.isDirectory() && cd.exists()){
                         File[] files = cd.listFiles();
-                        Boolean isModified = false;
+                        
                         for(File file : files){
                             if(file.isFile() && !file.getName().equals(".gitignore")){
                                 
@@ -116,7 +99,13 @@ public class Main {
 
                                 // Read file from last commit
                                 //Get last commit
-                                BufferedReader commitObjReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\commitObj.txt"));
+                                String branchRef = "";
+                                if(Main.getBranchName().equals("master")){
+                                    branchRef = "commitObj.txt";
+                                } else{
+                                    branchRef = Main.getBranchName() + "Obj.txt";
+                                }
+                                BufferedReader commitObjReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\" + branchRef));
                                 ArrayList<String> commitsArray = new ArrayList<>();
                                 while(stillReading){
                                     String line = commitObjReader.readLine();
@@ -131,20 +120,21 @@ public class Main {
                                 if(commitsArray.size() > 0){ //Check if there is a previous commit
                                    prevCommit = commitsArray.getLast().split(" ")[0];
                                 } else{
-                                    System.out.println("No files are being tracked at the moment. \n Please add to staging and commit to track files.");
-                                    return;
+                                    
+                                    isModified = null;
+                                    return isModified;
                                 }
 
                                 // Read contents
                                 //Check if file exists in previous commit
-                                File commitFile = new File(currentDirPath + "\\.minigit\\"+ Main.branchName+ "\\" + prevCommit + "\\" + file.getName());
+                                File commitFile = new File(currentDirPath + "\\.minigit\\"+ Main.getBranchName() + "\\" + prevCommit + "\\" + file.getName());
                                 if(!commitFile.isFile()){
-                                    System.out.println();
+                                    
                                     System.out.println("Untracked file: " + file.getName());
                                     System.out.println();
                                     continue;
                                 }
-                                BufferedReader commitFileReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\"+ Main.branchName+ "\\"  + prevCommit + "\\" + file.getName()));
+                                BufferedReader commitFileReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\"+ Main.getBranchName()+ "\\"  + prevCommit + "\\" + file.getName()));
                                 String commitedContent = "";
                                                                   
                                 while(stillReading){
@@ -165,25 +155,154 @@ public class Main {
 
                             }
                         }
-                        if(isModified){
-                            System.out.println("Changes present. \n Add to staging and commit.");
-                        } else{
-                            System.out.println("Working Tree Clean. \n No changes to commit.");
-                        }
-                    }
+                        
 
-                } catch(IOException e){
-                    System.err.println("Error occured while checking status: " + "\n" + e);
+                    }
+        } catch(IOException e){
+            System.err.println("Error occured while checking status: " + "\n" + e);
+        }
+
+        return isModified;
+
+    }
+
+    //Overload to remove the functionality for untracked files
+    static Boolean getStatus(Boolean isSwitching){
+        
+        Boolean isModified = false;
+                    
+        try{
+            
+                    //Get all files contents and compare to those of last commit
+                    //Get all files
+                    String currentDirPath = System.getProperty("user.dir");
+                    String cdpath = System.getProperty("user.dir");                    
+                    File cd = new File(cdpath);
+                    if(cd.isDirectory() && cd.exists()){
+                        File[] files = cd.listFiles();
+                        
+                        for(File file : files){
+                            if(file.isFile() && !file.getName().equals(".gitignore")){
+                                
+                                BufferedReader modFileReader = new BufferedReader(new FileReader(file.getName()));
+                                Boolean stillReading = true;
+                                // Read the modified file
+                                String modFileContent = "";
+                                while(stillReading){
+                                    String line = modFileReader.readLine();
+                                    if(line == null){                                        
+                                        break;
+                                    } else{
+                                        modFileContent = modFileContent + line;
+                                    }
+                                }
+                                modFileReader.close();
+
+                                // Read file from last commit
+                                //Get last commit
+                                String branchRef = "";
+                                if(Main.getBranchName().equals("master")){
+                                    branchRef = "commitObj.txt";
+                                } else{
+                                    branchRef = Main.getBranchName() + "Obj.txt";
+                                }
+                                BufferedReader commitObjReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\" + branchRef));
+                                ArrayList<String> commitsArray = new ArrayList<>();
+                                while(stillReading){
+                                    String line = commitObjReader.readLine();
+                                    if(line == null){                                        
+                                        break;
+                                    } else{
+                                        commitsArray.add(line);
+                                    }
+                                }
+                                commitObjReader.close();
+                                String prevCommit = null;
+                                if(commitsArray.size() > 0){ //Check if there is a previous commit
+                                   prevCommit = commitsArray.getLast().split(" ")[0];
+                                } else{
+                                    
+                                    return null;
+                                }
+
+                                // Read contents                            
+                                BufferedReader commitFileReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\"+ Main.getBranchName() + "\\"  + prevCommit + "\\" + file.getName()));
+                                String commitedContent = "";
+                                                                  
+                                while(stillReading){
+                                    String line = commitFileReader.readLine();
+                                    if(line == null){                                        
+                                        break;
+                                    } else{
+                                        commitedContent = commitedContent + line;
+                                    }
+                                }
+                                commitFileReader.close();
+                                
+
+                                if(!modFileContent.equals(commitedContent)){
+                                    isModified = true;
+                                    
+                                } 
+
+                            }
+                        }
+                        
+
+                    }
+        } catch(IOException e){
+            System.err.println("Error occured while checking status: " + "\n" + e);
+        }
+
+        return isModified;
+
+    }
+
+
+    private static void isRepoFunction(String[] args){
+
+        
+        String currentDirPath = System.getProperty("user.dir");
+                
+        if(args.length == 0){
+            System.out.println("Here are valid commands: \n ");
+            System.out.println("status: \n To check out the current state of the project");
+            System.out.println("add:\n To add files to the staging area");
+            System.out.println("staging: \n To view files in the staging area");
+            System.out.println("commit: \n To create a snapshot of the state of the project");
+            System.out.println("log: \n To view commit history");
+            System.out.println("checkout: \n To checkout a previous commit");
+            
+            return;
+        }
+
+        //Handle command, status
+        // Should show current branch, whether modified or unmodified, list untracked files
+        if(args[0].equals("status")){
+            if(args.length > 1){
+                System.out.println("Checking status only needs one command line argument");
+            } else{
+                Boolean isModified = Main.getStatus();
+                //System.out.println(isModified);
+                if(isModified == null){
+                    System.out.println("No files are being tracked at the moment. \n" + //
+                                                " Please add to staging and commit to track files.");
+                } else if(isModified == true){
+                    System.out.println("Changes present. \n" + //
+                                                " Add to staging and commit.");
+                } else{
+                    System.out.println("Working Tree Clean. \n No changes to commit.");
                 } 
             }
             return;
+            
         }
 
         //Handle command, add
         if(args[0].equals("add")){
             
             if(args.length > 2){
-                System.out.println("Adding to the staging area needs only two commandline arguemnts. \n Specify one file at a time or all of them using '*'");
+                System.out.println("Adding to the staging area needs only two commandline arguemnts. \n Specify one file at a time or all of them using '.'");
             } else if( args.length == 1){
                 System.out.println("Adding to the staging requires two commandline arguments. \n" + //
                                         " Specify one file at a time or all of them using '*'");
@@ -341,7 +460,7 @@ public class Main {
                 reader.readLine();
                 String line2 = reader.readLine();
                 
-                if(line2 == null){
+                if(line2 == null || line2.equals("")){
                     System.out.println("Please add files to staging area before commiting");
                     return;
                 }
@@ -496,7 +615,7 @@ public class Main {
 
             return;
          }
-
+         
          if(args[0].equals("branch")){
             if(args.length > 2){
                 System.out.println("Branching only takes two command line arguments");
@@ -523,6 +642,7 @@ public class Main {
                 } catch(IOException e){
                     System.err.println("Error while fetching branches: \n" + e);
                 }
+                return;
             } else{
 
                 if(!Main.getBranchName().equals("master")){
@@ -618,6 +738,78 @@ public class Main {
 
 
             }
+            return;
+         }
+
+         if(args[0].equals("switch")){
+
+            if(args.length > 1){
+                System.out.println("Swtching branches only requires one commandline argument.");
+              
+            } else{
+
+                String branch = Main.getBranchName();
+                // Ensure all changes are saved and commited before switching
+                Boolean isModified = Main.getStatus(true);
+                if(isModified == true){
+                    System.out.println("Please commit changes before switching branches.");
+
+                }else{  
+                    
+                    if(branch.equals("master")){ //Switch to the other branch
+                        try{
+                            BufferedReader branchesReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\branches.txt"));
+                            branchesReader.readLine();
+                            String goToBranch = branchesReader.readLine();
+                            branchesReader.close();
+
+                            BufferedReader mainTxtReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\main.txt"));
+                            String line1 = mainTxtReader.readLine();                            
+                            mainTxtReader.close();
+
+                            BufferedWriter mainTxtWriter = new BufferedWriter(new FileWriter(currentDirPath + "\\.minigit\\main.txt"));
+                            mainTxtWriter.write(line1);
+                            mainTxtWriter.newLine();
+                            mainTxtWriter.newLine();
+                            mainTxtWriter.write(goToBranch);
+                            mainTxtWriter.close();
+
+                            System.out.println("Switched to branch: " + goToBranch);
+
+
+
+                        } catch(IOException e){
+                            System.out.println("Error occured while swirching branches: \n" + e);
+                        }
+                    } else{
+
+                        try{
+
+                            BufferedReader mainTxtReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\main.txt"));
+                            String line1 = mainTxtReader.readLine();                            
+                            mainTxtReader.close();
+
+
+                            BufferedWriter mainTxtWriter = new BufferedWriter(new FileWriter(currentDirPath + "\\.minigit\\main.txt"));
+                            mainTxtWriter.write(line1);
+                            mainTxtWriter.newLine();
+                            mainTxtWriter.newLine();
+                            mainTxtWriter.write("master");
+                            mainTxtWriter.close();
+
+                            System.out.println("Switched to branch: " + "master");
+
+
+
+                        } catch(IOException e){
+                            System.out.println("Error occured while swirching branches: \n" + e);
+                        }
+
+                    }
+                }
+
+            }
+
             return;
          }
        
