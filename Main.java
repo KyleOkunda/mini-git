@@ -616,7 +616,7 @@ public class Main {
             return;
          }
          
-         if(args[0].equals("branch")){
+         if(args[0].equals("branch")){ //You can only have a max of two branches
             if(args.length > 2){
                 System.out.println("Branching only takes two command line arguments");
             } else if(args.length == 1){
@@ -626,11 +626,11 @@ public class Main {
                     BufferedReader branchesReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\branches.txt"));
                     Boolean stillReading = true;
                     while(stillReading){
-                        String line = branchesReader.readLine();
+                        String line = branchesReader.readLine();                        
                         if(line == null){
                             break;
                         } else{
-                            if(line.equals(branch)){
+                            if(line.trim().equals(branch.trim())){
                                 System.out.println(line + "  <---- Head");
                                 continue;
                             } else{
@@ -779,7 +779,7 @@ public class Main {
 
 
                         } catch(IOException e){
-                            System.out.println("Error occured while swirching branches: \n" + e);
+                            System.out.println("Error occured while switching branches: \n" + e);
                         }
                     } else{
 
