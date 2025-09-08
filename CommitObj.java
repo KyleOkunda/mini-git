@@ -1,15 +1,21 @@
 import java.io.*;
 import java.util.*;
+import java.time.LocalDateTime;
 
 public class CommitObj {
-    private Integer commitId;
-    private Integer prevCommitId;
+    private String commitId;
+    private String prevCommitId;
     private String commitMessage;
     private ArrayList<File> commitedFiles;
 
     CommitObj(String message, ArrayList<File> files){
 
         String currentDirPath = System.getProperty("user.dir");
+        Hash commitIdGen = new Hash();
+
+        //Get current time for commit Id generation
+        LocalDateTime now = LocalDateTime.now();
+        String currentTime = now.toString();
 
         message = message.replace(" ", ",");
 
@@ -25,6 +31,7 @@ public class CommitObj {
         //Assign attributes
         commitMessage = "\"" + message + "\"";
         commitedFiles = files;
+        commitId = commitIdGen.shaHash(currentTime);
 
         //Generate commitId
         //Check if a previous commit exists then increment its id
@@ -34,7 +41,7 @@ public class CommitObj {
             String line1 = reader.readLine();
             
             if(line1 == null){ //If there is no previous commit
-                commitId = 1000;
+                
                 prevCommitId = null;
                 BufferedWriter writerToCommitObj = new BufferedWriter(new FileWriter(currentDirPath + "\\.minigit\\" + branchRefFile));                
                 writerToCommitObj.write(commitId + " ");
@@ -47,7 +54,7 @@ public class CommitObj {
                     writerToCommitObj.write(file.getName() + " ");
                     File commitFolder = new File( currentDirPath + "\\.minigit\\" + branchName);
                     commitFolder.mkdir();
-                    File commitIdFolder = new File(commitFolder + "\\" + Integer.toString(commitId));
+                    File commitIdFolder = new File(commitFolder + "\\" + commitId);
                     commitIdFolder.mkdir();                    
                     String pathURL = commitIdFolder + "\\" + file.getName();
 
@@ -96,7 +103,7 @@ public class CommitObj {
                 }
                 commitObjReader.close();
                 String prevCommit = commitsArray.get(commitsArray.size() - 1).split(" ")[0];
-                prevCommitId = Integer.parseInt(prevCommit);
+                prevCommitId = fetchPrevCommit();
                 commitId = prevCommitId + 1;
                 reader.close();
 
@@ -117,7 +124,7 @@ public class CommitObj {
                     writerToCommitObj.write(file.getName() + " ");
                     File commitFolder = new File( currentDirPath + "\\.minigit\\" + branchName);
                     commitFolder.mkdir();
-                    File commitIdFolder = new File(commitFolder + "\\" + Integer.toString(commitId));
+                    File commitIdFolder = new File(commitFolder + "\\" + commitId);
                     commitIdFolder.mkdir();                    
                     String pathURL = commitIdFolder + "\\" + file.getName();
 
@@ -170,4 +177,46 @@ public class CommitObj {
         
 
     }
+
+    private String fetchPrevCommit(){
+        String currentDirPath = System.getProperty("user.dir");
+
+        //Get branch name
+        String branchName = Main.getBranchName();
+        String branchRefFile = "";
+        if(branchName.equals("master")){
+               branchRefFile = "commitObj.txt";
+        } else{
+               branchRefFile = branchName + "Obj.txt";
+        }
+
+        //Get all contents from the branch object and get the last one that holds the last commit made
+        String branchObjectContent = "";
+        String prevCommitId = null;
+        try{
+            BufferedReader BranchObjReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\" + branchRefFile));
+            Boolean stillReading = true;
+            while(stillReading){
+                String line = BranchObjReader.readLine();
+                if(line == null){
+                    BranchObjReader.close();
+                    break;
+                } else{
+                    branchObjectContent = branchObjectContent + line + "\n";
+                }
+            }
+            // Split the content to get each commit object
+            String[] commitObjects = branchObjectContent.split("\n");
+            String prevCommit = commitObjects[commitObjects.length - 1];
+            
+            //Get the prevCommitId from the prevCommit
+            String[] commitDetails = prevCommit.split(" ");
+            prevCommitId = commitDetails[0];
+        } catch(Exception e){
+            System.err.println("Error occured while fetching the previous commit: \n" + e);
+        }
+        return prevCommitId;
+
+    }
+
 }
