@@ -22,10 +22,6 @@ public class Hash {
             
 
         }
-
-        System.out.println("Length: " + hexString.toString().length());
-        System.out.println("Message Digest: " + hexString.toString());
-
         
 
         } catch(Exception e){

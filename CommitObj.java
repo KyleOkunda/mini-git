@@ -102,9 +102,8 @@ public class CommitObj {
                     }
                 }
                 commitObjReader.close();
-                String prevCommit = commitsArray.get(commitsArray.size() - 1).split(" ")[0];
-                prevCommitId = fetchPrevCommit();
-                commitId = prevCommitId + 1;
+                prevCommitId = fetchLastCommit();
+                
                 reader.close();
 
                 BufferedWriter writerToCommitObj = new BufferedWriter(new FileWriter( currentDirPath + "\\.minigit\\" + branchRefFile));
@@ -178,7 +177,7 @@ public class CommitObj {
 
     }
 
-    private String fetchPrevCommit(){
+    private String fetchLastCommit(){ //Gets the last commit id of the current branch
         String currentDirPath = System.getProperty("user.dir");
 
         //Get branch name
