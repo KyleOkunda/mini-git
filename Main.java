@@ -1,4 +1,5 @@
 import java.io.*;
+import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -486,14 +487,14 @@ public class Main {
                             if(file.getName().equals(fileNames[i])){
                                 
                                 Main.fileStagingArea.add(file);
+                                
                             }
                         }
                 
                     }
                 } else{
                     System.out.println("Please create files first");
-                }
-                
+                }                
 
                 new CommitObj(args[1], Main.fileStagingArea);
                 
@@ -567,7 +568,16 @@ public class Main {
                 System.out.println("Checking out requires only two commandline arguments");
             } else{
 
-                String cid = args[1]; //The commit id we are checking out
+                String commitId = args[1];                
+                String cid = "";
+                String[] arr = new String[2];
+                if(commitId.contains(".")){                                      
+                    arr = commitId.split("\\.");
+                    cid = arr[0];
+                } else{
+                    cid = commitId;
+                }
+                
                 String branch = Main.getBranchName();
                 File commitDir = new File(currentDirPath + "\\.minigit\\"+ branch + "\\"  + cid);
                 //System.out.println(commitDir.getAbsolutePath());
@@ -650,7 +660,7 @@ public class Main {
             } else{
 
                 if(!Main.getBranchName().equals("master")){
-                    System.out.println("Branch not created.\n Must  be on master to create a new branch. \n Please commit and merge to create a new branch.");
+                    System.out.println("Branch not created. \n Must  be on master to create a new branch. \n Please commit and merge to create a new branch.");
 
                     return;
                 }
@@ -662,13 +672,63 @@ public class Main {
                     String secondBranch = branchObjReader.readLine();
                     branchObjReader.close();
                     if(secondBranch != null){
-                        System.out.println("You can only have two branches, please merge first branch to create a new one");
+                        System.out.println("\nYou can only have two branches to prevent conflicts, please merge first branch to create a new one.");
                         return;
                     }
 
                 }catch(Exception e){
                     System.err.println("Error occured while checking current branches: \n" + e);
+                    return;
                 }
+
+                //Add a .div marker to current commit to show divergent point
+
+                String currentCommit = CommitObj.fetchLastCommit();
+                currentCommit = currentCommit + ".div"; // Add the divergent marker
+                System.out.println(currentCommit);
+                // Update commit object to reflect this                       
+                String branchRefFile = "commitObj.txt";               
+
+                //Get all contents from the branch object and get the last one that holds the last commit made
+                String branchObjectContent = "";
+                try{
+                    BufferedReader BranchObjReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\" + branchRefFile));
+                    Boolean stillReading = true;
+                    while(stillReading){
+                        String line = BranchObjReader.readLine();
+                        if(line == null){
+                            BranchObjReader.close();
+                            break;
+                        } else{
+                            branchObjectContent = branchObjectContent + line + "\n";
+                        }
+                    }
+                    
+                    String[] commitObjects = branchObjectContent.split("\n"); // Split the content to get each commit object
+                    String lastCommitObject = commitObjects[commitObjects.length - 1]; // Get the last one
+                    System.out.println(lastCommitObject);
+                    String[] commitDetails = lastCommitObject.split(" "); //Get the prevCommitId from the prevCommit                    
+                    commitDetails[0] = currentCommit;
+                    String divergentCommitObj = "";
+                    for(String detail : commitDetails){
+                        divergentCommitObj = divergentCommitObj + detail + " ";
+                    }
+                    commitObjects[commitObjects.length - 1] = divergentCommitObj;
+
+                    // Write to commit Obj
+                    
+                        BufferedWriter branchObjWriter = new BufferedWriter(new FileWriter(currentDirPath + "\\.minigit\\" + branchRefFile));
+                        for(String commitObj : commitObjects){
+                            branchObjWriter.write(commitObj + "\n");
+                        }
+                        branchObjWriter.close();
+                } catch(IOException e){
+                        System.err.println("Error while adding divergent marker to current commit:\n" + e);
+                }
+
+                    
+
+
 
 
                 // Add branch to the branches.txt file
@@ -679,6 +739,7 @@ public class Main {
                     branchesFileWriter.close();
                 } catch(IOException e){
                     System.err.println("Error while addding to branches list: \n" + e);
+                    return;
                 }
 
                 // Add commit history for this branch
@@ -761,7 +822,7 @@ public class Main {
             return;
          }
 
-         if(args[0].equals("switch")){
+        if(args[0].equals("switch")){
 
             if(args.length > 1){
                 System.out.println("Swtching branches only requires one commandline argument.");
@@ -964,6 +1025,22 @@ public class Main {
             }
 
             return;
+         }
+
+
+         // Merging using three way merge
+         if(args[0].equals("merge")){
+
+            if(args.length > 1){
+                System.out.println("Merging only requires one commandline argument");
+                return;
+            } else{
+
+                // Get common ancestor; the base before branching
+
+
+            }
+
          }
        
 

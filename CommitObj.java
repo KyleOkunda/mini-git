@@ -177,7 +177,7 @@ public class CommitObj {
 
     }
 
-    private String fetchLastCommit(){ //Gets the last commit id of the current branch
+    public static String fetchLastCommit(){ //Gets the last commit id of the current branch
         String currentDirPath = System.getProperty("user.dir");
 
         //Get branch name
