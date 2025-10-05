@@ -32,6 +32,45 @@ public class Main {
         return branch;
     }
 
+    static String getBaseCommit(){
+
+                //Parse branch reference file to get the .div extension
+                String currentDirPath = System.getProperty("user.dir");
+                String branchRefFile = "commitObj.txt";               
+                String branchObjectContent = "";
+                try{
+                    BufferedReader BranchObjReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\" + branchRefFile));
+                    Boolean stillReading = true;
+                    while(stillReading){
+                        String line = BranchObjReader.readLine();
+                        if(line == null){
+                            BranchObjReader.close();
+                            break;
+                        } else{
+                            branchObjectContent = branchObjectContent + line + "\n";
+                        }
+                    }
+                    
+                    String[] commitObjects = branchObjectContent.split("\n"); // Split the content to get each commit object
+                    for(String commitObj : commitObjects){
+                        String commit = commitObj.split(" ")[0];
+                        
+                        if(commit.contains(".")){
+                            commit = commit.split("\\.")[0];
+                            
+                            return commit;
+                        }else{
+                            continue;
+                        }
+                    }                    
+                    
+                } catch(IOException e){
+                        System.err.println("Error while getting base commit with the .div:\n" + e);
+                }         
+                return null;       
+
+    }
+
     static String getBranchCommitObjects(String branch){
         String currentDirPath = System.getProperty("user.dir");
         String branchRef = "";
@@ -684,8 +723,7 @@ public class Main {
                 //Add a .div marker to current commit to show divergent point
 
                 String currentCommit = CommitObj.fetchLastCommit();
-                currentCommit = currentCommit + ".div"; // Add the divergent marker
-                System.out.println(currentCommit);
+                currentCommit = currentCommit + ".div"; // Add the divergent marker                
                 // Update commit object to reflect this                       
                 String branchRefFile = "commitObj.txt";               
 
@@ -705,8 +743,7 @@ public class Main {
                     }
                     
                     String[] commitObjects = branchObjectContent.split("\n"); // Split the content to get each commit object
-                    String lastCommitObject = commitObjects[commitObjects.length - 1]; // Get the last one
-                    System.out.println(lastCommitObject);
+                    String lastCommitObject = commitObjects[commitObjects.length - 1]; // Get the last one                    
                     String[] commitDetails = lastCommitObject.split(" "); //Get the prevCommitId from the prevCommit                    
                     commitDetails[0] = currentCommit;
                     String divergentCommitObj = "";
@@ -715,8 +752,7 @@ public class Main {
                     }
                     commitObjects[commitObjects.length - 1] = divergentCommitObj;
 
-                    // Write to commit Obj
-                    
+                    // Write to commit Obj                    
                         BufferedWriter branchObjWriter = new BufferedWriter(new FileWriter(currentDirPath + "\\.minigit\\" + branchRefFile));
                         for(String commitObj : commitObjects){
                             branchObjWriter.write(commitObj + "\n");
@@ -724,11 +760,7 @@ public class Main {
                         branchObjWriter.close();
                 } catch(IOException e){
                         System.err.println("Error while adding divergent marker to current commit:\n" + e);
-                }
-
-                    
-
-
+                }          
 
 
                 // Add branch to the branches.txt file
@@ -887,6 +919,9 @@ public class Main {
                                     //Get the prevCommitId
                                     String[] commitDetails = prevCommit.split(" ");
                                     prevCommitId = commitDetails[0];
+                                    if(prevCommitId.contains(".")){
+                                        prevCommitId = prevCommitId.split("\\.")[0];
+                                    }
 
                                     //Delete current files
                                     File currentDir = new File(currentDirPath);
@@ -978,6 +1013,9 @@ public class Main {
                                     //Get the prevCommitId
                                     String[] commitDetails = prevCommit.split(" ");
                                     prevCommitId = commitDetails[0];
+                                    if(prevCommitId.contains(".")){
+                                        prevCommitId = prevCommitId.split("\\.")[0];
+                                    }
 
                                     //Delete current files
                                     File currentDir = new File(currentDirPath);
@@ -1028,7 +1066,7 @@ public class Main {
          }
 
 
-         // Merging using three way merge
+         // Merging using the three way merge
          if(args[0].equals("merge")){
 
             if(args.length > 1){
@@ -1036,7 +1074,227 @@ public class Main {
                 return;
             } else{
 
-                // Get common ancestor; the base before branching
+                //Ensure user is on master before merging
+                String branch = Main.getBranchName();
+                if(!branch.equals("master")){
+                    System.out.println("Please switch to master to merge current branch");
+                    return;
+                }
+
+                // Compare hashes of the file contents instead of file contents themselves
+                Hash contentHash = new Hash();
+
+                // Get the base commit, incoming commit and master commit
+                String baseCommit = getBaseCommit(); // Get common ancestor; the base before branching; commit with .div 
+                String masterCommit = CommitObj.fetchLastCommit(); // Last commit made in master
+                //Get last commit of the branch
+                String incomingBranch = "";
+                String incomingCommit = "";
+                try{
+                    BufferedReader branchFileReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\branches.txt"));
+                    branchFileReader.readLine();
+                    incomingBranch = branchFileReader.readLine().trim();
+                    branchFileReader.close();
+
+                    BufferedReader BranchObjReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\"  + incomingBranch + "Obj.txt"));
+                    Boolean stillReading = true;
+                    while(stillReading){
+                        String line = BranchObjReader.readLine();
+                        if(line == null){
+                            BranchObjReader.close();
+                            break;
+                        } else{
+                            branchObjectContent = branchObjectContent + line + "\n";
+                        }
+                    }
+                    // Split the content to get each commit object
+                    String[] commitObjects = branchObjectContent.split("\n");
+                    String prevCommitObj = commitObjects[commitObjects.length - 1];
+                    
+                    //Get the prevCommitId from the prevCommit
+                    String[] commitDetails = prevCommitObj.split(" ");
+                    incomingCommit = commitDetails[0];
+
+                } catch(IOException e){
+                    System.err.println("Error while fetching last commit of the incoming branch:\n" + e);
+                    return;
+                }
+
+                //Get files from base commit
+                File baseCommitFolder = new File(currentDirPath + "\\.minigit\\master\\" + baseCommit);
+                if(baseCommitFolder.isDirectory()){
+
+                    File[] baseFiles = baseCommitFolder.listFiles();
+                    Hashtable<String, String> baseFileMapper = new Hashtable<>();
+                    String  baseFileContent = null;
+                    for(File baseFile : baseFiles){
+                        baseFileContent = "";
+                        BufferedReader baseFilReader = new BufferedReader(new FileReader(baseFile.getAbsolutePath()));
+                        while(true){
+                            String line = baseFilReader.readLine().trim();
+                            if(line == null){
+                                baseFilReader.close();
+                                break;
+                            } else{
+                                baseFileContent = baseFileContent + line + "\n";
+                            }
+                        }
+
+                        String baseFileHash = contentHash.shaHash(baseFileContent);
+
+                        baseFileMapper.put(baseFile.getName(), baseFileHash);
+
+                    }
+
+                } else{
+                    System.err.println("Error! Base directory you are looking for does not exist.");
+                    return;
+                }
+
+                  //Get files from master commit
+                File masterCommitFolder = new File(currentDirPath + "\\.minigit\\master\\" + masterCommit);
+                if(masterCommitFolder.isDirectory()){
+
+                    File[] masterFiles = masterCommitFolder.listFiles();
+                    Hashtable<String, String> masterFileMapper = new Hashtable<>();
+                    String masterFileContent = null;
+                    for(File masterFile : masterFiles){
+                        masterFileContent = "";
+                        BufferedReader masterFilReader = new BufferedReader(new FileReader(masterFile.getAbsolutePath()));
+                        while(true){
+                            String line = masterFilReader.readLine().trim();
+                            if(line == null){
+                                masterFilReader.close();
+                                break;
+                            } else{
+                                masterFileContent = masterFileContent + line + "\n";
+                            }
+                        }
+                        String masterFileHash = contentHash.shaHash(masterFileContent);
+                        masterFileMapper.put(masterFile.getName(), masterFileHash);
+
+                    }
+
+                } else{
+                    System.err.println("Error! Master directory you are looking for does not exist.");
+                    return;
+                }
+                
+
+                  //Get files from incoming commit
+                File incomingCommitFolder = new File(currentDirPath + "\\.minigit\\" + incomingBranch + "\\" + incomingCommit);
+                if(incomingCommitFolder.isDirectory()){
+
+                    File[] incomingFiles = incomingCommitFolder.listFiles();
+                    Hashtable<String, String> incomingFileMapper = new Hashtable<>();
+                    String incomingFileContent = null;
+                    for(File incomingFile : incomingFiles){
+                        incomingFileContent = "";
+                        BufferedReader incomingFilReader = new BufferedReader(new FileReader(incomingFile.getAbsolutePath()));
+                        while(true){
+                            String line = incomingFilReader.readLine().trim();
+                            if(line == null){
+                                incomingFilReader.close();
+                                break;
+                            } else{
+                                incomingFileContent = incomingFileContent + line + "\n";
+                            }
+                        }
+                        String incomingFileHash = contentHash.shaHash(incomingFileContent);
+                        incomingFileMapper.put(incomingFile.getName(), incomingFileHash);
+
+                    }
+
+                } else{
+                    System.err.println("Error! Incoming directory you are looking for does not exist.");
+                    return;
+                }
+
+                // Boolean variables to hold whether or not base = incoming and base = master
+                Boolean doesMasterContainChanges = false;
+                Boolean doesIncomingContainChanges = false;
+                Boolean allBranchesSimilar = null;
+
+                // check if master contains changes from base
+                for(File baseFile :  baseFiles){
+
+                    for(File masterFile : masterFiles){
+
+                        String baseFileName = baseFile.getName();
+                        String masterFileName = masterFile.getName();
+
+                        if(baseFileName.equals(masterFileName)){
+                            
+                            String baseFileHash = baseFileMapper.get(baseFileName);
+                            String masterFileHash = masterFileMapper.get(masterFileName);
+
+                            if(baseFileHash.equals(masterFileHash)){
+                                continue;
+                            } else{
+                                doesMasterContainChanges = true;
+                                break;
+                            }
+
+                        } else{
+                            continue;
+                        }
+                                            
+                    }
+                    if(doesMasterContainChanges){
+                        break;
+                    }
+
+                }
+
+
+                 // check if incoming contains changes from base
+                for(File baseFile :  baseFiles){
+
+                    for(File incomingFile : incomingFiles){
+
+                        String baseFileName = baseFile.getName();
+                        String incomingFileName = incomingFile.getName();
+
+                        if(baseFileName.equals(incomingFileName)){
+                            
+                            String baseFileHash = baseFileMapper.get(baseFileName);
+                            String incomingFileHash = incomingFileMapper.get(incomingFileName);
+
+                            if(baseFileHash.equals(incomingFileHash)){
+                                continue;
+                            } else{
+                                doesIncomingContainChanges = true;
+                                break;
+                            }
+
+                        } else{
+                            continue;
+                        }                    
+                        
+                    }
+                    if(doesIncomingContainChanges){
+                        break;
+                    }
+
+                }
+
+                if(doesIncomingContainChanges && doesMasterContainChanges ){
+                    allBranchesSimilar = false;
+                } else{
+                    allBranchesSimilar = true;
+                }
+
+                // Check for conflict cases
+                // Case 1: No change in both incoming or master, base = incoming = master
+                if(allBranchesSimilar){// Delete the branch
+
+                    deleteBranch();
+
+                }
+
+                
+
+
 
 
             }
