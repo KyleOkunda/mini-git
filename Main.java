@@ -32,6 +32,44 @@ public class Main {
         return branch;
     }
 
+    static void removerDivCommit(){
+
+        
+
+    }
+
+    static void deleteBranch(File file){
+
+        // Delete the branch dir
+        if(file.isDirectory()){ 
+
+            File[] childFiles = file.listFiles();
+            for(File child : childFiles){
+                
+                deleteBranch(child);
+            }
+
+        } else{
+            file.delete();
+        }
+        file.delete();
+
+        // Delete branch reference file, branchObj.txt
+        String currentDirPath = System.getProperty("user.dir");
+        String branchName = file.getName();
+        File branchRef = new File(currentDirPath + "\\.minigit\\" + branchName + "Obj.txt");
+        branchRef.delete();
+
+        //Clear branches.txt to only old master
+        try{
+            BufferedWriter branchWriter = new BufferedWriter(new FileWriter(currentDirPath + "\\.minigit\\branches.txt"));
+            branchWriter.write("master");
+            branchWriter.close();
+        } catch(IOException e){
+            System.err.println("Error occured while clearing branch from the branches.txt");
+        }
+    }
+
     static String getBaseCommit(){
 
                 //Parse branch reference file to get the .div extension
@@ -163,6 +201,11 @@ public class Main {
                                 String prevCommit = null;
                                 if(commitsArray.size() > 0){ //Check if there is a previous commit
                                    prevCommit = commitsArray.getLast().split(" ")[0];
+
+                                    if(prevCommit.contains(".")){
+                                        prevCommit = prevCommit.split("\\.")[0];
+                                    }
+
                                 } else{
                                     
                                     isModified = null;
@@ -1098,6 +1141,7 @@ public class Main {
 
                     BufferedReader BranchObjReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\"  + incomingBranch + "Obj.txt"));
                     Boolean stillReading = true;
+                    String branchObjectContent = "";
                     while(stillReading){
                         String line = BranchObjReader.readLine();
                         if(line == null){
@@ -1121,28 +1165,37 @@ public class Main {
                 }
 
                 //Get files from base commit
+                if(baseCommit.contains(".")){
+                    baseCommit = baseCommit.split("\\.")[0];
+                }
                 File baseCommitFolder = new File(currentDirPath + "\\.minigit\\master\\" + baseCommit);
+                System.out.println("Base path: " + currentDirPath + "\\.minigit\\master\\" + baseCommit);
+                File[] baseFiles = baseCommitFolder.listFiles();
+                Hashtable<String, String> baseFileMapper = new Hashtable<>();
+                String  baseFileContent = null;
                 if(baseCommitFolder.isDirectory()){
-
-                    File[] baseFiles = baseCommitFolder.listFiles();
-                    Hashtable<String, String> baseFileMapper = new Hashtable<>();
-                    String  baseFileContent = null;
                     for(File baseFile : baseFiles){
-                        baseFileContent = "";
-                        BufferedReader baseFilReader = new BufferedReader(new FileReader(baseFile.getAbsolutePath()));
-                        while(true){
-                            String line = baseFilReader.readLine().trim();
-                            if(line == null){
-                                baseFilReader.close();
-                                break;
-                            } else{
-                                baseFileContent = baseFileContent + line + "\n";
+                        try{
+
+                            baseFileContent = "";
+                            BufferedReader baseFilReader = new BufferedReader(new FileReader(baseFile.getAbsolutePath()));
+                            while(true){
+                                String line = baseFilReader.readLine();
+                                if(line == null){
+                                    baseFilReader.close();
+                                    break;
+                                } else{
+                                    baseFileContent = baseFileContent + line.trim() + "\n";
+                                }
                             }
+
+                            String baseFileHash = contentHash.shaHash(baseFileContent);
+
+                            baseFileMapper.put(baseFile.getName(), baseFileHash);
+
+                        } catch(IOException e){
+                            System.err.println("Error while assigning base files to content mapper:\n" + e);
                         }
-
-                        String baseFileHash = contentHash.shaHash(baseFileContent);
-
-                        baseFileMapper.put(baseFile.getName(), baseFileHash);
 
                     }
 
@@ -1152,26 +1205,33 @@ public class Main {
                 }
 
                   //Get files from master commit
+                  if(masterCommit.contains(".")){
+                    masterCommit = masterCommit.split("\\.")[0];
+                  }
                 File masterCommitFolder = new File(currentDirPath + "\\.minigit\\master\\" + masterCommit);
-                if(masterCommitFolder.isDirectory()){
-
-                    File[] masterFiles = masterCommitFolder.listFiles();
-                    Hashtable<String, String> masterFileMapper = new Hashtable<>();
-                    String masterFileContent = null;
+                System.out.println("Master path: " + currentDirPath + "\\.minigit\\master\\" + masterCommit);
+                File[] masterFiles = masterCommitFolder.listFiles();
+                Hashtable<String, String> masterFileMapper = new Hashtable<>();
+                String masterFileContent = null;
+                if(masterCommitFolder.isDirectory()){                    
                     for(File masterFile : masterFiles){
-                        masterFileContent = "";
-                        BufferedReader masterFilReader = new BufferedReader(new FileReader(masterFile.getAbsolutePath()));
-                        while(true){
-                            String line = masterFilReader.readLine().trim();
-                            if(line == null){
-                                masterFilReader.close();
-                                break;
-                            } else{
-                                masterFileContent = masterFileContent + line + "\n";
+                        try{
+                            masterFileContent = "";
+                            BufferedReader masterFilReader = new BufferedReader(new FileReader(masterFile.getAbsolutePath()));
+                            while(true){
+                                String line = masterFilReader.readLine();
+                                if(line == null){
+                                    masterFilReader.close();
+                                    break;
+                                } else{
+                                    masterFileContent = masterFileContent.trim() + line + "\n";
+                                }
                             }
+                            String masterFileHash = contentHash.shaHash(masterFileContent);
+                            masterFileMapper.put(masterFile.getName(), masterFileHash);
+                        } catch(IOException e){
+                            System.err.println("Error while assinging master files to content mapper:\n" + e);
                         }
-                        String masterFileHash = contentHash.shaHash(masterFileContent);
-                        masterFileMapper.put(masterFile.getName(), masterFileHash);
 
                     }
 
@@ -1182,27 +1242,34 @@ public class Main {
                 
 
                   //Get files from incoming commit
+                  if(incomingCommit.contains(".")){
+                    incomingCommit = incomingCommit.split("\\.")[0];
+                  }
                 File incomingCommitFolder = new File(currentDirPath + "\\.minigit\\" + incomingBranch + "\\" + incomingCommit);
-                if(incomingCommitFolder.isDirectory()){
-
-                    File[] incomingFiles = incomingCommitFolder.listFiles();
-                    Hashtable<String, String> incomingFileMapper = new Hashtable<>();
-                    String incomingFileContent = null;
+                System.out.println("Incoming path: " + currentDirPath + "\\.minigit\\" + incomingBranch + "\\" + incomingCommit);
+                File[] incomingFiles = incomingCommitFolder.listFiles();
+                Hashtable<String, String> incomingFileMapper = new Hashtable<>();
+                String incomingFileContent = null;
+                if(incomingCommitFolder.isDirectory()){                    
                     for(File incomingFile : incomingFiles){
-                        incomingFileContent = "";
-                        BufferedReader incomingFilReader = new BufferedReader(new FileReader(incomingFile.getAbsolutePath()));
-                        while(true){
-                            String line = incomingFilReader.readLine().trim();
-                            if(line == null){
-                                incomingFilReader.close();
-                                break;
-                            } else{
-                                incomingFileContent = incomingFileContent + line + "\n";
+                        try{
+                            incomingFileContent = "";
+                            BufferedReader incomingFilReader = new BufferedReader(new FileReader(incomingFile.getAbsolutePath()));
+                            while(true){
+                                String line = incomingFilReader.readLine();
+                                if(line == null){
+                                    incomingFilReader.close();
+                                    break;
+                                } else{
+                                    incomingFileContent = incomingFileContent.trim() + line + "\n";
+                                }
                             }
-                        }
-                        String incomingFileHash = contentHash.shaHash(incomingFileContent);
-                        incomingFileMapper.put(incomingFile.getName(), incomingFileHash);
+                            String incomingFileHash = contentHash.shaHash(incomingFileContent);
+                            incomingFileMapper.put(incomingFile.getName(), incomingFileHash);
 
+                        } catch(IOException e){
+                            System.err.println("Error while assigning incoming files to content mapper:\n" + e);
+                        }
                     }
 
                 } else{
@@ -1278,21 +1345,66 @@ public class Main {
 
                 }
 
-                if(doesIncomingContainChanges && doesMasterContainChanges ){
+                if(doesIncomingContainChanges || doesMasterContainChanges ){
                     allBranchesSimilar = false;
                 } else{
                     allBranchesSimilar = true;
                 }
 
                 // Check for conflict cases
+                File branchFolder = new File(currentDirPath + "\\.minigit\\" + incomingBranch);
                 // Case 1: No change in both incoming or master, base = incoming = master
                 if(allBranchesSimilar){// Delete the branch
-
-                    deleteBranch();
+                    System.out.println("Base = Incoming = Master\n Deleting branch...");
+                    
+                    deleteBranch(branchFolder); // Recursively deletes the contents
+                    removerDivCommit();
+                    System.out.println("Successfully deleted branch.");
+                    return;
 
                 }
 
-                
+                // case 2: Changes present in master but not in incoming, accept master
+                if((doesMasterContainChanges == true) && (doesIncomingContainChanges == false)){
+                    System.out.println("Base = incoming, base != master");
+                    System.out.println("Only master has changed, accepting master.\n Deleting branch...");
+                    deleteBranch(branchFolder); // Recursively deletes the contents
+                    removerDivCommit();
+                    System.out.println("Successfully deleted branch.");
+                    return;
+
+                }
+
+                //Case 3: Changes present in incoming but not in master, accept incoming
+                if((doesMasterContainChanges == false) && (doesIncomingContainChanges == true)){
+                    System.out.println("Base = master, base != incoming");
+                    System.out.println("Only incoming has changed, accepting master. \n Copying contents to master...");
+
+                   try{
+                     // Move the branch to the master
+                    Path masterBranchPath = Paths.get(currentDirPath, ".minigit", "master");
+                    Path incomingBranchPath = Paths.get(currentDirPath, ".minigit", incomingBranch);
+                    Files.move(incomingBranchPath, masterBranchPath, StandardCopyOption.REPLACE_EXISTING);
+                    removerDivCommit();
+                    System.out.println("Successfully moved incoming branch to master");
+                    return;
+                   } catch(IOException e){
+                    System.err.println("Error while moving incoming branch to the master branch:\n" + e);
+                    return;
+                   }
+                }
+
+                // Case 4: Changes present in both but same result, accept master
+                if(doesIncomingContainChanges && doesMasterContainChanges){
+                    System.out.println("Base != incoming, base != master but master = incoming");
+                    System.out.println("Both master and incoming have changed but have the same result.\n Deleting branch...");
+                    deleteBranch(branchFolder); // Recursively deletes the contents
+                    removerDivCommit();
+                    System.out.println("Successfully deleted branch.");
+                    return;
+                }
+
+                // Case 5: Changes present in both resulting to different outcomes, conflict           
 
 
 
