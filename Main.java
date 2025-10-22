@@ -395,7 +395,7 @@ public class Main {
 
     }
 
-    static void switchBranch (String[] args){
+    static void switchBranch (String[] args){ // to switch from commandline
         
             if(args.length > 1){
                 System.out.println("Switching branches only requires one commandline argument.");
@@ -409,6 +409,7 @@ public class Main {
                     System.out.println("Please commit changes before switching branches.");
 
                 }else{  
+                    String currentDirPath = System.getProperty("user.dir");
                     
                     if(branch.equals("master")){ //Switch to the other branch
                      
@@ -601,6 +602,209 @@ public class Main {
 
                     }
                 }
+
+            }
+
+            return;
+    }
+
+    static void switchBranch (){ // to switch during merge
+
+                String currentDirPath = System.getProperty("user.dir");
+                String branch = Main.getBranchName();
+                // Ensure all changes are saved and commited before switching
+                Boolean isModified = Main.getStatus(true);
+                if(isModified == true){
+                    System.out.println("Please commit changes before switching branches.");
+
+                }else{  
+                    currentDirPath = System.getProperty("user.dir");
+                    
+                    if(branch.equals("master")){ //Switch to the other branch
+                     
+                        try{
+                            BufferedReader branchesReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\branches.txt"));
+                            branchesReader.readLine();
+                            String goToBranch = branchesReader.readLine();
+                            branchesReader.close();
+
+                            BufferedReader mainTxtReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\main.txt"));
+                            String line1 = mainTxtReader.readLine();                            
+                            mainTxtReader.close();
+
+
+                           //check if commits already exist in the branch
+                           BufferedReader branchReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\" + goToBranch + "Obj.txt"));
+                           String branchCommit = branchReader.readLine();
+                           branchReader.close();
+                           if(branchCommit == null){ //if no commits exist
+                                System.out.println("Switched to branch: " + goToBranch);
+                           } else{ //if commits exist
+
+                             //Copy the contents of the last commit
+                             String branchRefFile = goToBranch + "Obj.txt";
+                             //Get all contents from the branch object and get the last one that holds the last commit made
+                                String branchObjectContent = "";
+                                String prevCommitId = null;
+                                try{
+                                    BufferedReader BranchObjReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\" + branchRefFile));
+                                    Boolean stillReading = true;
+                                    while(stillReading){
+                                        String line = BranchObjReader.readLine();
+                                        if(line == null){
+                                            BranchObjReader.close();
+                                            break;
+                                        } else{
+                                            branchObjectContent = branchObjectContent + line + "\n";
+                                        }
+                                    }
+                                    // Split the content to get each commit object
+                                    String[] commitObjects = branchObjectContent.split("\n");
+                                    String prevCommit = commitObjects[commitObjects.length - 1];
+                                    
+                                    //Get the prevCommitId
+                                    String[] commitDetails = prevCommit.split(" ");
+                                    prevCommitId = commitDetails[0];
+                                    if(prevCommitId.contains(".")){
+                                        prevCommitId = prevCommitId.split("\\.")[0];
+                                    }
+
+                                    //Delete current files
+                                    File currentDir = new File(currentDirPath);
+                                    File[] actualFiles = null;
+                                    if(currentDir.exists() && currentDir.isDirectory()){
+                                        actualFiles = currentDir.listFiles();
+                                    }
+                                    for(File actualFile : actualFiles){
+                                        actualFile.delete();
+                                    }
+
+                                    //Copy files to current dir visible in IDE
+                                    File commitDir = new File(currentDirPath + "\\.minigit\\" + goToBranch + "\\" + prevCommitId);
+                                    File[] storedFiles = null;
+                                    if(commitDir.exists() && commitDir.isDirectory()){
+                                        storedFiles = commitDir.listFiles();
+                                    } 
+                                    System.out.println("Copying files ... \n");
+                                    for(File storedFile : storedFiles){
+                                        System.out.println("Copying " + storedFile.getName() + " ...");
+                                        Path source = Paths.get(storedFile.getAbsolutePath());
+                                        Path target = Paths.get(currentDirPath + "\\" + storedFile.getName());
+
+                                        Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
+
+                                    }
+                                    System.out.println("\n Files copied successfully");
+                                } catch(Exception e){
+                                    System.err.println("Error occured while fetching the previous commit: \n" + e);
+                                    return;
+                                }
+                            
+
+                                System.out.println("Switched to branch: " + goToBranch);
+
+                           }
+
+
+
+                        } catch(IOException e){
+                            System.out.println("Error occured while switching branches: \n" + e);
+                        }
+                    } else{
+
+                        try{
+                             
+                            BufferedReader mainTxtReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\main.txt"));
+                            String line1 = mainTxtReader.readLine();                            
+                            mainTxtReader.close();
+
+
+                            BufferedWriter mainTxtWriter = new BufferedWriter(new FileWriter(currentDirPath + "\\.minigit\\main.txt"));
+                            mainTxtWriter.write(line1);
+                            mainTxtWriter.newLine();
+                            mainTxtWriter.newLine();
+                            mainTxtWriter.write("master");
+                            mainTxtWriter.close();
+
+                             //check if commits already exist in the branch
+
+                           BufferedReader branchReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\commitObj.txt"));
+                           String branchCommit = branchReader.readLine();
+                           branchReader.close();
+                           if(branchCommit == null){ //if no commits exist
+                                System.out.println("Switched to branch: " + "master");
+                           } else{ //if commits exist
+
+                             //Copy the contents of the last commit
+                             String branchRefFile = "commitObj.txt";
+                             //Get all contents from the branch object and get the last one that holds the last commit made
+                                String branchObjectContent = "";
+                                String prevCommitId = null;
+                                try{
+                                    BufferedReader BranchObjReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\" + branchRefFile));
+                                    Boolean stillReading = true;
+                                    while(stillReading){
+                                        String line = BranchObjReader.readLine();
+                                        if(line == null){
+                                            BranchObjReader.close();
+                                            break;
+                                        } else{
+                                            branchObjectContent = branchObjectContent + line + "\n";
+                                        }
+                                    }
+                                    // Split the content to get each commit object
+                                    String[] commitObjects = branchObjectContent.split("\n");
+                                    String prevCommit = commitObjects[commitObjects.length - 1];
+                                    
+                                    //Get the prevCommitId
+                                    String[] commitDetails = prevCommit.split(" ");
+                                    prevCommitId = commitDetails[0];
+                                    if(prevCommitId.contains(".")){
+                                        prevCommitId = prevCommitId.split("\\.")[0];
+                                    }
+
+                                    //Delete current files
+                                    File currentDir = new File(currentDirPath);
+                                    File[] actualFiles = null;
+                                    if(currentDir.exists() && currentDir.isDirectory()){
+                                        actualFiles = currentDir.listFiles();
+                                    }
+                                    for(File actualFile : actualFiles){
+                                        actualFile.delete();
+                                    }
+
+                                    //Copy files to current dir visible in IDE
+                                    File commitDir = new File(currentDirPath + "\\.minigit\\" + "master" + "\\" + prevCommitId);
+                                    File[] storedFiles = null;
+                                    if(commitDir.exists() && commitDir.isDirectory()){
+                                        storedFiles = commitDir.listFiles();
+                                    } 
+                                    System.out.println("Copying files ... \n");
+                                    for(File storedFile : storedFiles){
+                                        System.out.println("Copying " + storedFile.getName() + " ...");
+                                        Path source = Paths.get(storedFile.getAbsolutePath());
+                                        Path target = Paths.get(currentDirPath + "\\" + storedFile.getName());
+
+                                        Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
+
+                                    }
+                                    System.out.println("\n Files copied successfully");
+                                } catch(Exception e){
+                                    System.err.println("Error occured while fetching the previous commit: \n" + e);
+                                    return;
+                                }
+                            
+
+                                System.out.println("Switched to branch: " + "master");
+
+                           }
+
+                        } catch(IOException e){
+                            System.out.println("Error occured while switching branches: \n" + e);
+                        }
+
+                    }
+                
 
             }
 
