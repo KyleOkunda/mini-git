@@ -33,8 +33,55 @@ public class Main {
     }
 
     static void removerDivCommit(){
+        System.out.println("Deleting divergent marker after merge...");
+        String currentDirPath = System.getProperty("user.dir");
+        //Read the commitObj.txt to detect commits with .div
+        ArrayList<String> commitsArray = new ArrayList<String>();
+        try{
+            BufferedReader commitObjReader = new BufferedReader(new FileReader(currentDirPath + "//.minigit//commitObj.txt"));
+            
+            while(true){
+                String line = commitObjReader.readLine();
+                if(line == null){
+                    commitObjReader.close();
+                    break;
+                } else{
+                    commitsArray.add(line);
+                }
+            }
 
-        
+            for(String commitObj : commitsArray){
+                String[] commitDetails = commitObj.split(" ");
+                String commit = commitDetails[0];
+                String commitObjString = "";
+                Integer index = commitsArray.indexOf(commitObj);
+
+                if(commit.contains(".div")){
+                    commitDetails[0] = commit.split("\\.")[0];
+                    commitObjString = String.join(" ", commitDetails);
+                    commitsArray.set(index, commitObjString);
+
+                } else{
+
+                    commitObjString = String.join(" ", commitDetails);
+                    commitsArray.set(index, commitObjString);
+
+                }
+                
+                
+            }
+
+            // Write back to the commitObj.txt
+            BufferedWriter commmitObjWriter = new BufferedWriter(new FileWriter(currentDirPath + "//.minigit//commitObj.txt"));
+            for(String commitObj : commitsArray){
+                commmitObjWriter.write(commitObj + "\n");
+                
+                
+            }
+            commmitObjWriter.close();
+        } catch(IOException e){
+            System.err.println("Error while parsing for divergent point:\n" + e);
+        }
 
     }
 
@@ -307,6 +354,9 @@ public class Main {
                                 String prevCommit = null;
                                 if(commitsArray.size() > 0){ //Check if there is a previous commit
                                    prevCommit = commitsArray.getLast().split(" ")[0];
+                                   if(prevCommit.contains(".div")){
+                                    prevCommit = prevCommit.split("\\.")[0];
+                                   }
                                 } else{
                                     
                                     return null;
@@ -338,7 +388,7 @@ public class Main {
 
                     }
         } catch(IOException e){
-            System.err.println("Error occured while checking status: " + "\n" + e);
+            System.err.println("Error occured while checking status whwn switching: " + "\n" + e);
         }
 
         return isModified;
@@ -913,6 +963,7 @@ public class Main {
                 }else{  
                     
                     if(branch.equals("master")){ //Switch to the other branch
+                     
                         try{
                             BufferedReader branchesReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\branches.txt"));
                             branchesReader.readLine();
@@ -1010,7 +1061,7 @@ public class Main {
                     } else{
 
                         try{
-
+                             
                             BufferedReader mainTxtReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\main.txt"));
                             String line1 = mainTxtReader.readLine();                            
                             mainTxtReader.close();
@@ -1168,8 +1219,7 @@ public class Main {
                 if(baseCommit.contains(".")){
                     baseCommit = baseCommit.split("\\.")[0];
                 }
-                File baseCommitFolder = new File(currentDirPath + "\\.minigit\\master\\" + baseCommit);
-                System.out.println("Base path: " + currentDirPath + "\\.minigit\\master\\" + baseCommit);
+                File baseCommitFolder = new File(currentDirPath + "\\.minigit\\master\\" + baseCommit);                
                 File[] baseFiles = baseCommitFolder.listFiles();
                 Hashtable<String, String> baseFileMapper = new Hashtable<>();
                 String  baseFileContent = null;
@@ -1185,7 +1235,7 @@ public class Main {
                                     baseFilReader.close();
                                     break;
                                 } else{
-                                    baseFileContent = baseFileContent + line.trim() + "\n";
+                                    baseFileContent = baseFileContent.trim() + line + "\n";
                                 }
                             }
 
@@ -1208,8 +1258,7 @@ public class Main {
                   if(masterCommit.contains(".")){
                     masterCommit = masterCommit.split("\\.")[0];
                   }
-                File masterCommitFolder = new File(currentDirPath + "\\.minigit\\master\\" + masterCommit);
-                System.out.println("Master path: " + currentDirPath + "\\.minigit\\master\\" + masterCommit);
+                File masterCommitFolder = new File(currentDirPath + "\\.minigit\\master\\" + masterCommit);                
                 File[] masterFiles = masterCommitFolder.listFiles();
                 Hashtable<String, String> masterFileMapper = new Hashtable<>();
                 String masterFileContent = null;
@@ -1245,8 +1294,7 @@ public class Main {
                   if(incomingCommit.contains(".")){
                     incomingCommit = incomingCommit.split("\\.")[0];
                   }
-                File incomingCommitFolder = new File(currentDirPath + "\\.minigit\\" + incomingBranch + "\\" + incomingCommit);
-                System.out.println("Incoming path: " + currentDirPath + "\\.minigit\\" + incomingBranch + "\\" + incomingCommit);
+                File incomingCommitFolder = new File(currentDirPath + "\\.minigit\\" + incomingBranch + "\\" + incomingCommit);                
                 File[] incomingFiles = incomingCommitFolder.listFiles();
                 Hashtable<String, String> incomingFileMapper = new Hashtable<>();
                 String incomingFileContent = null;
@@ -1298,6 +1346,10 @@ public class Main {
                             if(baseFileHash.equals(masterFileHash)){
                                 continue;
                             } else{
+                                System.out.println("Change detected in master " + masterFileName);
+                                System.out.println("Base file:\n" + baseFileHash);
+                                System.out.println("Master file:\n" + masterFileHash);
+                                System.out.println();
                                 doesMasterContainChanges = true;
                                 break;
                             }
@@ -1330,6 +1382,10 @@ public class Main {
                             if(baseFileHash.equals(incomingFileHash)){
                                 continue;
                             } else{
+                                System.out.println("Change detected in incoming " + incomingFileName);
+                                System.out.println("Base file:\n" + baseFileHash);
+                                System.out.println("Incoming file hash:\n" + incomingFileHash);
+                                System.out.println();
                                 doesIncomingContainChanges = true;
                                 break;
                             }
@@ -1345,11 +1401,15 @@ public class Main {
 
                 }
 
-                if(doesIncomingContainChanges || doesMasterContainChanges ){
-                    allBranchesSimilar = false;
-                } else{
+                if((doesIncomingContainChanges == false) && (doesMasterContainChanges == false) ){
                     allBranchesSimilar = true;
+                } else{
+                    allBranchesSimilar = false;
                 }
+
+                System.out.println("All branches similar? " + allBranchesSimilar);
+                System.out.println("Change present in master? " + doesMasterContainChanges);
+                System.out.println("Change present in incoming? " + doesIncomingContainChanges);
 
                 // Check for conflict cases
                 File branchFolder = new File(currentDirPath + "\\.minigit\\" + incomingBranch);
@@ -1378,7 +1438,7 @@ public class Main {
                 //Case 3: Changes present in incoming but not in master, accept incoming
                 if((doesMasterContainChanges == false) && (doesIncomingContainChanges == true)){
                     System.out.println("Base = master, base != incoming");
-                    System.out.println("Only incoming has changed, accepting master. \n Copying contents to master...");
+                    System.out.println("Only incoming has changed, accepting incoming. \n Copying contents to master...");
 
                    try{
                      // Move the branch to the master
