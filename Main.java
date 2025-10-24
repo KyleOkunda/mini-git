@@ -1683,9 +1683,33 @@ public class Main {
                     return;
                    }
                 }
-
-                // Case 4: Changes present in both but same result, accept master
+                
                 if(doesIncomingContainChanges && doesMasterContainChanges){
+                    //Determine if the final result is the same or not
+                    Boolean isIdentical = false; // Checks if incoming and master are identical
+                    Set<String> masterKeySet = masterFileMapper.keySet();
+                    Set<String> incomingKeySet = incomingFileMapper.keySet();
+
+                    if(masterKeySet.size() != incomingKeySet.size()){ // If key size is different then master and incoming are not identical, conflict
+                        conflictHandler(); // Case 5: Changes present in both resulting to different outcomes, conflict
+                        return;
+                    }
+
+                    for(String masterKey : masterKeySet){
+
+                        String masterHash = masterFileMapper.get(masterKey);
+                        String incomingHash = incomingFileMapper.get(masterKey);
+
+                        if(masterHash.equals(incomingHash)){
+                            continue;
+                        } else{
+                            conflictHandler(); // Case 5: Changes present in both resulting to different outcomes, conflict
+                            return;
+                        }
+
+                    }
+                    // Master and incoming identical at this point, move on to case 4
+                    // Case 4: Changes present in both but same result, accept master
                     System.out.println("Base != incoming, base != master but master = incoming");
                     System.out.println("Both master and incoming have changed but have the same result.\n Deleting branch...");
                     deleteBranch(branchFolder); // Recursively deletes the contents
@@ -1693,12 +1717,6 @@ public class Main {
                     System.out.println("Successfully deleted branch.");
                     return;
                 }
-
-                // Case 5: Changes present in both resulting to different outcomes, conflict           
-
-
-
-
             }
 
          }
