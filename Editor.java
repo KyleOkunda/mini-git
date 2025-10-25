@@ -29,11 +29,10 @@ public class Editor {
 
         sidebar = new JPanel();
         sidebar.setBounds(0, 0, (windowWidth / 5), windowHeight);
-        sidebar.setBackground(Color.GRAY);        
-        sidebar.setLayout(new FlowLayout());
+        sidebar.setBackground(Color.GRAY);
         sidebar.setPreferredSize(new Dimension(200, 800));
+        sidebar.setLayout(new FlowLayout());
         JScrollPane sidebarScroll = new JScrollPane(sidebar);
-        //sidebarScroll.setPreferredSize(new Dimension(200, 800));
         sidebarScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER); // Hide horizontal scrollbar
         sidebarScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         frame.add(sidebarScroll, BorderLayout.WEST);
