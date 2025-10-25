@@ -811,6 +811,12 @@ public class Main {
             return;
     }
 
+    static void conflictHandler(Hashtable<String, String> masterFile, Hashtable<String, String> incomingFiles){
+
+        new Conflict(masterFile, incomingFiles);
+
+    }
+
 
     private static void isRepoFunction(String[] args){
 
@@ -1430,6 +1436,7 @@ public class Main {
                 File baseCommitFolder = new File(currentDirPath + "\\.minigit\\master\\" + baseCommit);                
                 File[] baseFiles = baseCommitFolder.listFiles();
                 Hashtable<String, String> baseFileMapper = new Hashtable<>();
+                Hashtable<String, String> baseFileContentTable = new Hashtable<>();
                 String  baseFileContent = null;
                 if(baseCommitFolder.isDirectory()){
                     for(File baseFile : baseFiles){
@@ -1443,12 +1450,12 @@ public class Main {
                                     baseFilReader.close();
                                     break;
                                 } else{
-                                    baseFileContent = baseFileContent.trim() + line + "\n";
+                                    baseFileContent = baseFileContent + line + "\n";
                                 }
                             }
 
                             String baseFileHash = contentHash.shaHash(baseFileContent);
-
+                            baseFileContentTable.put(baseFile.getName(), baseFileContent);
                             baseFileMapper.put(baseFile.getName(), baseFileHash);
 
                         } catch(IOException e){
@@ -1469,6 +1476,7 @@ public class Main {
                 File masterCommitFolder = new File(currentDirPath + "\\.minigit\\master\\" + masterCommit);                
                 File[] masterFiles = masterCommitFolder.listFiles();
                 Hashtable<String, String> masterFileMapper = new Hashtable<>();
+                Hashtable<String, String> masterFileContentTable = new Hashtable<>();
                 String masterFileContent = null;
                 if(masterCommitFolder.isDirectory()){                    
                     for(File masterFile : masterFiles){
@@ -1481,10 +1489,11 @@ public class Main {
                                     masterFilReader.close();
                                     break;
                                 } else{
-                                    masterFileContent = masterFileContent.trim() + line + "\n";
+                                    masterFileContent = masterFileContent + line + "\n";
                                 }
                             }
                             String masterFileHash = contentHash.shaHash(masterFileContent);
+                            masterFileContentTable.put(masterFile.getName(), masterFileContent);
                             masterFileMapper.put(masterFile.getName(), masterFileHash);
                         } catch(IOException e){
                             System.err.println("Error while assinging master files to content mapper:\n" + e);
@@ -1505,6 +1514,7 @@ public class Main {
                 File incomingCommitFolder = new File(currentDirPath + "\\.minigit\\" + incomingBranch + "\\" + incomingCommit);                
                 File[] incomingFiles = incomingCommitFolder.listFiles();
                 Hashtable<String, String> incomingFileMapper = new Hashtable<>();
+                Hashtable<String, String> incomingFileContentTable = new Hashtable<>();
                 String incomingFileContent = null;
                 if(incomingCommitFolder.isDirectory()){                    
                     for(File incomingFile : incomingFiles){
@@ -1517,10 +1527,11 @@ public class Main {
                                     incomingFilReader.close();
                                     break;
                                 } else{
-                                    incomingFileContent = incomingFileContent.trim() + line + "\n";
+                                    incomingFileContent = incomingFileContent + line + "\n";
                                 }
                             }
                             String incomingFileHash = contentHash.shaHash(incomingFileContent);
+                            incomingFileContentTable.put(incomingFile.getName(), incomingFileContent);
                             incomingFileMapper.put(incomingFile.getName(), incomingFileHash);
 
                         } catch(IOException e){
@@ -1689,9 +1700,10 @@ public class Main {
                     Boolean isIdentical = false; // Checks if incoming and master are identical
                     Set<String> masterKeySet = masterFileMapper.keySet();
                     Set<String> incomingKeySet = incomingFileMapper.keySet();
-
+                    System.out.println(masterKeySet.size());
+                    System.out.println(incomingKeySet.size());
                     if(masterKeySet.size() != incomingKeySet.size()){ // If key size is different then master and incoming are not identical, conflict
-                        conflictHandler(); // Case 5: Changes present in both resulting to different outcomes, conflict
+                        conflictHandler(masterFileContentTable, incomingFileContentTable); // Case 5: Changes present in both resulting to different outcomes, conflict
                         return;
                     }
 
@@ -1703,7 +1715,7 @@ public class Main {
                         if(masterHash.equals(incomingHash)){
                             continue;
                         } else{
-                            conflictHandler(); // Case 5: Changes present in both resulting to different outcomes, conflict
+                            conflictHandler(masterFileContentTable, incomingFileContentTable); // Case 5: Changes present in both resulting to different outcomes, conflict
                             return;
                         }
 
