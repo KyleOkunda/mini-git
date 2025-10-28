@@ -811,9 +811,56 @@ public class Main {
             return;
     }
 
-    static void conflictHandler(Hashtable<String, String> masterFile, Hashtable<String, String> incomingFiles){
+    static void conflictHandler(File incomingBranch, Hashtable<String, String> masterFiles, Hashtable<String, String> incomingFiles){
 
-        new Conflict(masterFile, incomingFiles);
+        Conflict conflict = new Conflict();
+        conflict.handleConflict(masterFiles, incomingFiles);
+        Hashtable<String, String> resolvedContentTable = conflict.resolvedContent;
+        if(resolvedContentTable == null || resolvedContentTable.keySet().size() == 0){
+            System.err.println("Invalid merge. Please try again");
+            return;
+        }
+        System.out.println("Received resolved content:");
+        for(String key : resolvedContentTable.keySet()){
+            System.out.println(key);
+        }
+
+        String currentDirPath = System.getProperty("user.dir");
+        
+        File mainDirectory = new File(currentDirPath);
+        if(mainDirectory.isDirectory()){
+            File[] files = mainDirectory.listFiles();
+
+            for(File file : files){
+                for(String filename : resolvedContentTable.keySet()){
+                    if(filename.equals(file.getName())){
+                        try{
+                            String resolvedContent = resolvedContentTable.get(filename);
+                            BufferedWriter fileWriter = new BufferedWriter(new FileWriter(currentDirPath + "\\" + filename));
+                            fileWriter.write(resolvedContent);
+                            fileWriter.close();
+
+                        } catch(IOException e){
+                            System.err.println("Error while rewriting file during conflict handling:\n" + e);
+                        }
+                    } else{
+                        continue;
+                    }
+                }
+            }
+            System.out.println("Finished writing resolved content");
+
+            // Delete incoming branch
+            deleteBranch(incomingBranch);
+            removerDivCommit();
+            
+            // Create new commit
+            String commitMessage = "Merge Commit, Merging " + incomingBranch.getName() + " into master";
+            //Convert files array to an arrayList for the commitObj class
+            ArrayList<File> filesToCommit = new ArrayList<>(Arrays.asList(files));
+            new CommitObj(commitMessage, filesToCommit);
+        }
+
 
     }
 
@@ -1565,10 +1612,7 @@ public class Main {
                             if(baseFileHash.equals(masterFileHash)){
                                 continue;
                             } else{
-                                System.out.println("Change detected in master " + masterFileName);
-                                System.out.println("Base file:\n" + baseFileHash);
-                                System.out.println("Master file:\n" + masterFileHash);
-                                System.out.println();
+                                
                                 doesMasterContainChanges = true;
                                 break;
                             }
@@ -1601,10 +1645,7 @@ public class Main {
                             if(baseFileHash.equals(incomingFileHash)){
                                 continue;
                             } else{
-                                System.out.println("Change detected in incoming " + incomingFileName);
-                                System.out.println("Base file:\n" + baseFileHash);
-                                System.out.println("Incoming file hash:\n" + incomingFileHash);
-                                System.out.println();
+                                
                                 doesIncomingContainChanges = true;
                                 break;
                             }
@@ -1697,13 +1738,12 @@ public class Main {
                 
                 if(doesIncomingContainChanges && doesMasterContainChanges){
                     //Determine if the final result is the same or not
-                    Boolean isIdentical = false; // Checks if incoming and master are identical
+                    Boolean isIdentical = true; // Checks if incoming and master are identical
                     Set<String> masterKeySet = masterFileMapper.keySet();
                     Set<String> incomingKeySet = incomingFileMapper.keySet();
-                    System.out.println(masterKeySet.size());
-                    System.out.println(incomingKeySet.size());
+                    
                     if(masterKeySet.size() != incomingKeySet.size()){ // If key size is different then master and incoming are not identical, conflict
-                        conflictHandler(masterFileContentTable, incomingFileContentTable); // Case 5: Changes present in both resulting to different outcomes, conflict
+                        conflictHandler( branchFolder ,masterFileContentTable, incomingFileContentTable); // Case 5: Changes present in both resulting to different outcomes, conflict
                         return;
                     }
 
@@ -1713,13 +1753,21 @@ public class Main {
                         String incomingHash = incomingFileMapper.get(masterKey);
 
                         if(masterHash.equals(incomingHash)){
+                            masterFileContentTable.remove(masterKey);
+                            incomingFileContentTable.remove(masterKey);
                             continue;
                         } else{
-                            conflictHandler(masterFileContentTable, incomingFileContentTable); // Case 5: Changes present in both resulting to different outcomes, conflict
-                            return;
+                            isIdentical = false;
+                            
                         }
 
                     }
+
+                    if(isIdentical == false){
+                        conflictHandler( branchFolder ,masterFileContentTable, incomingFileContentTable); // Case 5: Changes present in both resulting to different outcomes, conflict
+                        return;
+                    }
+
                     // Master and incoming identical at this point, move on to case 4
                     // Case 4: Changes present in both but same result, accept master
                     System.out.println("Base != incoming, base != master but master = incoming");

@@ -8,6 +8,7 @@ import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import javax.swing.JButton;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -27,8 +28,18 @@ public class Conflict {
     JTextArea acceptEditor;
     JPanel btnArea;
     static ArrayList<String> buttonList;
-    
-     Conflict(Hashtable<String, String> master, Hashtable<String, String> incoming){
+    String currentFile = "";
+    ArrayList<JButton> fileButtons = new ArrayList<JButton>();   
+    public Hashtable<String, String> resolvedContent = new Hashtable<>(); 
+
+    public void handleConflict (Hashtable<String, String> master, Hashtable<String, String> incoming){
+        //Alert user of conflict first.
+        JOptionPane.showMessageDialog(null,
+                     "Merge Conflicts found in the following files. \nPlease resolve  conflicts to proceed with merge.",
+                     "Conflicts Found!!!.",
+                     JOptionPane.ERROR_MESSAGE);
+
+
         int windowWidth = 1200;
         int windowHeight = 800;
         frame = new JFrame("Handling Conflict.");     
@@ -119,39 +130,82 @@ public class Conflict {
         frame.setResizable(false);
         frame.setBackground(Color.BLACK);
         frame.setLayout(null);
-
-        acceptBtn.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {                     
-                    int result = JOptionPane.showConfirmDialog(null,
-                     "Are you sure you want to accept these changes?\n Once accepted the result cannot be changed.",
-                     "Please confrim before proceeding.",
-                     JOptionPane.OK_CANCEL_OPTION);
-                    
-                     if(result == JOptionPane.OK_OPTION){
-                        System.out.println("Creating new commit for resolved conflict.");
-                     } else{
-                        System.out.println("Back to resolving conflict.");
-                     }
-
-                }
-            });
-
         
         for(String key : master.keySet()){
-            JButton btn = new JButton(key);
+            JButton btn = new JButton(key);            
             sidebar.add(btn);
+            fileButtons.add(btn);            
             btn.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {                     
                     masterEditor.setText(master.get(key));
                     incomingEditor.setText(incoming.get(key));
                     acceptEditor.setText("Please choose one format to accept");
+                    currentFile = key;
                 }
             });
         }
         sidebar.add(acceptBtn);
 
+
+        acceptBtn.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    if(currentFile.equals("")){
+                        JOptionPane.showMessageDialog(null,
+                            "Please select file and resolve first",
+                            "Select File!",
+                            JOptionPane.ERROR_MESSAGE);
+                            
+                    } else{
+                        int result = JOptionPane.showConfirmDialog(null,
+                        "Are you sure you want to accept these changes?\n Once accepted the result cannot be changed.",
+                        "Please confrim before proceeding.",
+                        JOptionPane.OK_CANCEL_OPTION);
+                    
+                     if(result == JOptionPane.OK_OPTION){
+                        String acceptedText = acceptEditor.getText();
+                        System.out.println("Accepted text: " + acceptedText);
+                        if(acceptedText.trim().equals("") || acceptedText.trim().equals("Please choose one format to accept")){
+                            JOptionPane.showMessageDialog(null,
+                            "Please resolve conflicts and paste them in the third editor.",
+                            "Conflicts Found!!!",
+                            JOptionPane.ERROR_MESSAGE);
+                        } else{
+
+                            // Remove the btn for that file
+                            for(JButton fileButton : fileButtons){
+                                String btn = fileButton.getText();                                
+                                if(btn.trim().equals(currentFile.trim())){   
+                                    resolvedContent.put(btn, acceptedText);
+                                    sidebar.remove(fileButton);
+                                    sidebar.revalidate();
+                                    sidebar.repaint();
+                                    fileButtons.remove(fileButton);
+                                    incomingEditor.setText("");
+                                    masterEditor.setText("");
+                                    currentFile = "";
+
+                                    // If no more files to resolve are there to resolve, close JFrame
+                                    if(fileButtons.size() == 0){
+                                        frame.dispose();
+                                        
+                                    }
+
+                                    break;
+                                }
+                            }                                                        
+
+                        }                        
+
+                     } else{
+                        System.out.println("Back to resolving conflict.");
+                     }
+
+                    }
+
+                }
+            });                        
         
     }
 
@@ -174,7 +228,9 @@ public class Conflict {
                         "second line on app");
         master.put("main", "line on main \n" + //
                         "second line on main");
-        new Conflict(master, base);
+        
+        Conflict conflict = new Conflict();
+        conflict.handleConflict(master, base);
     }
 
 
