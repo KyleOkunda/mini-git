@@ -18,7 +18,8 @@ import javax.swing.JTextArea;
 
 public class Conflict {
     
-    JFrame frame;
+    JDialog frame; 
+    JPanel sideContainer;   
     JPanel sidebar;
     JLabel sidebarTitle;
     JPanel titles;
@@ -42,21 +43,29 @@ public class Conflict {
 
         int windowWidth = 1200;
         int windowHeight = 800;
-        frame = new JFrame("Handling Conflict.");     
+        frame = new JDialog();     
+        frame.setTitle("conflict");
+        frame.setModal(true);
 
         sidebar = new JPanel();
-        sidebar.setBounds(0, 0, (windowWidth / 5), windowHeight);
+        sidebar.setBounds(0, 0, 200, windowHeight);
         sidebar.setBackground(Color.GRAY);
         sidebar.setPreferredSize(new Dimension(200, 800));
         sidebar.setLayout(new FlowLayout());
         JScrollPane sidebarScroll = new JScrollPane(sidebar);
         sidebarScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER); // Hide horizontal scrollbar
         sidebarScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        frame.add(sidebarScroll, BorderLayout.WEST);
+        
+        sideContainer = new JPanel();
+        sideContainer.setBackground(Color.GRAY);
+        sideContainer.setBounds(0, 0, (windowWidth / 5), windowHeight);
+        sideContainer.setPreferredSize(new Dimension(240, 800));        
+        sideContainer.add(sidebarScroll);
+
 
         JButton acceptBtn = new JButton("Accept Changes");
         //acceptBtn.setBounds(0, 750, 240, 50);        
-        frame.add(sidebarScroll, BorderLayout.WEST);        
+        frame.add(sideContainer, BorderLayout.WEST);        
 
         editorContainer = new JPanel();        
         editorContainer.setBounds((windowWidth / 5) + 30, 0, 930, windowHeight);
@@ -123,10 +132,9 @@ public class Conflict {
         editorContainer.add(acceptScroll, BorderLayout.SOUTH);
 
         frame.add(editorContainer);
-        frame.setSize(windowWidth, windowHeight);
-        frame.setVisible(true);
+        frame.setSize(windowWidth, windowHeight);        
         frame.setLocationRelativeTo(null);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         frame.setResizable(false);
         frame.setBackground(Color.BLACK);
         frame.setLayout(null);
@@ -164,8 +172,7 @@ public class Conflict {
                         JOptionPane.OK_CANCEL_OPTION);
                     
                      if(result == JOptionPane.OK_OPTION){
-                        String acceptedText = acceptEditor.getText();
-                        System.out.println("Accepted text: " + acceptedText);
+                        String acceptedText = acceptEditor.getText();                        
                         if(acceptedText.trim().equals("") || acceptedText.trim().equals("Please choose one format to accept")){
                             JOptionPane.showMessageDialog(null,
                             "Please resolve conflicts and paste them in the third editor.",
@@ -205,7 +212,8 @@ public class Conflict {
                     }
 
                 }
-            });                        
+            });        
+            frame.setVisible(true);                
         
     }
 

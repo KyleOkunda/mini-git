@@ -39,6 +39,7 @@ public class CommitObj {
         try{
             BufferedReader reader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\" + branchRefFile));
             String line1 = reader.readLine();
+            reader.close();
             
             if(line1 == null){ //If there is no previous commit
                 
@@ -57,6 +58,7 @@ public class CommitObj {
                     File commitIdFolder = new File(commitFolder + "\\" + commitId);
                     commitIdFolder.mkdir();                    
                     String pathURL = commitIdFolder + "\\" + file.getName();
+                    writerToCommitObj.close();
 
                     BufferedWriter writerToTrackedFile = new BufferedWriter(new FileWriter(pathURL));
                     //Read content of original and copy to the copy file
@@ -80,8 +82,8 @@ public class CommitObj {
 
                 }
                 
-                writerToCommitObj.close();
-                reader.close();
+                
+                
                 
                 
             } else{ //If a previous commit exists

@@ -817,7 +817,7 @@ public class Main {
         conflict.handleConflict(masterFiles, incomingFiles);
         Hashtable<String, String> resolvedContentTable = conflict.resolvedContent;
         if(resolvedContentTable == null || resolvedContentTable.keySet().size() == 0){
-            System.err.println("Invalid merge. Please try again");
+            System.err.println("Invalid merge. Please try again.");
             return;
         }
         System.out.println("Received resolved content:");
