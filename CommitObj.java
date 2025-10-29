@@ -48,17 +48,19 @@ public class CommitObj {
                 writerToCommitObj.write(commitId + " ");
                 writerToCommitObj.write(prevCommitId + " ");
                 writerToCommitObj.write(commitMessage + " ");
-                
+
+                for(File file : commitedFiles){ // Dedicated for loop to prevent resource conflict
+                    writerToCommitObj.write(file.getName() + " ");
+                }
+                writerToCommitObj.close();                 
                 
                 for(File file : commitedFiles){ //Create new files, copy of the committed file
-                    
-                    writerToCommitObj.write(file.getName() + " ");
+                                        
                     File commitFolder = new File( currentDirPath + "\\.minigit\\" + branchName);
                     commitFolder.mkdir();
                     File commitIdFolder = new File(commitFolder + "\\" + commitId);
                     commitIdFolder.mkdir();                    
-                    String pathURL = commitIdFolder + "\\" + file.getName();
-                    writerToCommitObj.close();
+                    String pathURL = commitIdFolder + "\\" + file.getName();                    
 
                     BufferedWriter writerToTrackedFile = new BufferedWriter(new FileWriter(pathURL));
                     //Read content of original and copy to the copy file
@@ -118,18 +120,21 @@ public class CommitObj {
                 writerToCommitObj.write(commitId + " ");
                 writerToCommitObj.write(prevCommitId + " ");
                 writerToCommitObj.write(commitMessage + " ");
-               
+
+                for(File file : commitedFiles){ // Dedicated for loop to prevent resource conflict
+                    writerToCommitObj.write(file.getName() + " ");
+                }
+                writerToCommitObj.close();  
+                
+                File commitFolder = new File( currentDirPath + "\\.minigit\\" + branchName);
+                commitFolder.mkdir();
                 
                 for(File file : commitedFiles){ //Create new files, copy of the committed file
-                    
-                    writerToCommitObj.write(file.getName() + " ");
-                    File commitFolder = new File( currentDirPath + "\\.minigit\\" + branchName);
-                    commitFolder.mkdir();
+                                                            
                     File commitIdFolder = new File(commitFolder + "\\" + commitId);
                     commitIdFolder.mkdir();                    
                     String pathURL = commitIdFolder + "\\" + file.getName();
-
-                    
+                    System.out.println(pathURL);                    
 
                     //Read content of original and copy to the copy file
                     BufferedWriter writerToTrackingFile = new BufferedWriter(new FileWriter(pathURL));                 
@@ -140,23 +145,24 @@ public class CommitObj {
                         String line = trackedFileReader.readLine();
                         if(line == null){
                             stillReadingTrackedFile = false;
+                            writerToTrackingFile.close(); 
                             trackedFileReader.close();
                             break;
                         } else{
                             writerToTrackingFile.write(line);                        
                             writerToTrackingFile.newLine();
-                        }
-                                        
+                        }                                        
 
                     }
-                    writerToTrackingFile.close(); 
+                    
                 
                              
             }
-            writerToCommitObj.close();
+            
         }
         } catch(IOException e){
-            System.err.println("Error occured while making the commit: \n" + e);
+            System.err.println("Error occured while making the commit: \n");
+            e.printStackTrace();
         }
 
         //Empty the staging area

@@ -831,21 +831,28 @@ public class Main {
         if(mainDirectory.isDirectory()){
             File[] files = mainDirectory.listFiles();
 
-            for(File file : files){
-                for(String filename : resolvedContentTable.keySet()){
-                    if(filename.equals(file.getName())){
-                        try{
-                            String resolvedContent = resolvedContentTable.get(filename);
-                            BufferedWriter fileWriter = new BufferedWriter(new FileWriter(currentDirPath + "\\" + filename));
-                            fileWriter.write(resolvedContent);
-                            fileWriter.close();
+            //Convert files array to an arrayList for the commitObj class
+            ArrayList<File> filesToCommit = new ArrayList<>(Arrays.asList(files));
 
-                        } catch(IOException e){
-                            System.err.println("Error while rewriting file during conflict handling:\n" + e);
+            for(File file : files){
+                if(file.isFile()){
+                    for(String filename : resolvedContentTable.keySet()){
+                        if(filename.equals(file.getName())){
+                            try{
+                                String resolvedContent = resolvedContentTable.get(filename);
+                                BufferedWriter fileWriter = new BufferedWriter(new FileWriter(currentDirPath + "\\" + filename));
+                                fileWriter.write(resolvedContent);
+                                fileWriter.close();
+
+                            } catch(IOException e){
+                                System.err.println("Error while rewriting file during conflict handling:\n" + e);
+                            }
+                        } else{ // Remove the folder
+                            continue;
                         }
-                    } else{
-                        continue;
                     }
+                } else{
+                    filesToCommit.remove(file);
                 }
             }
             System.out.println("Finished writing resolved content");
@@ -855,9 +862,7 @@ public class Main {
             removerDivCommit();
             
             // Create new commit
-            String commitMessage = "Merge Commit, Merging " + incomingBranch.getName() + " into master";
-            //Convert files array to an arrayList for the commitObj class
-            ArrayList<File> filesToCommit = new ArrayList<>(Arrays.asList(files));
+            String commitMessage = "Merge Commit, Merging " + incomingBranch.getName() + " into master";           
             new CommitObj(commitMessage, filesToCommit);
         }
 
