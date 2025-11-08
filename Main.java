@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
+
 public class Main {
     static Boolean isCommitted = false;
     static ArrayList<String> stagingArea = new ArrayList<>();
@@ -811,7 +812,10 @@ public class Main {
             return;
     }
 
-    static void conflictHandler(File incomingBranch, Hashtable<String, String> masterFiles, Hashtable<String, String> incomingFiles){
+    static void conflictHandler(String incomingCommit, File incomingBranch, Hashtable<String, String> masterFiles, Hashtable<String, String> incomingFiles){
+
+        Set<String> masterKeySet = masterFiles.keySet();
+        Set<String> incomingKeySet = incomingFiles.keySet();
 
         Conflict conflict = new Conflict();
         conflict.handleConflict(masterFiles, incomingFiles);
@@ -819,11 +823,7 @@ public class Main {
         if(resolvedContentTable == null || resolvedContentTable.keySet().size() == 0){
             System.err.println("Invalid merge. Please try again.");
             return;
-        }
-        System.out.println("Received resolved content:");
-        for(String key : resolvedContentTable.keySet()){
-            System.out.println(key);
-        }
+        }                
 
         String currentDirPath = System.getProperty("user.dir");
         
@@ -858,6 +858,7 @@ public class Main {
             System.out.println("Finished writing resolved content");
 
             // Delete incoming branch
+            detectNewFiles(masterKeySet, incomingKeySet, incomingBranch.getName(), incomingCommit);
             deleteBranch(incomingBranch);
             removerDivCommit();
             
@@ -867,6 +868,61 @@ public class Main {
         }
 
 
+    }
+
+    static void detectNewFiles(Set<String> masterKeySet, Set<String> incomingKeySet, String incomingBranch, String incomingCommit ){
+
+                System.out.println("Scanning for new files...");
+        
+                //Check for new files in the branch and copy new file to master, if any exists
+                String currentDirPath = System.getProperty("user.dir");
+                ArrayList<String> newFiles = new ArrayList<>(incomingKeySet); // To hold new file names detected
+                
+                if(incomingKeySet.size() > masterKeySet.size()){ // Check if incoming contains new files, copy to master
+                    System.out.println("New files detected.");
+                    for(String incomingFile : incomingKeySet){                        
+
+                        for(String masterFile : masterKeySet){
+                            if(masterFile.equals(incomingFile)){
+                                newFiles.remove(masterFile);                                
+                            }
+                        }
+
+                    }
+                    for(String f : newFiles){
+                        System.out.println(f);
+                    }
+                
+                    File branchDir = new File(currentDirPath + "\\.minigit\\" + incomingBranch + "\\" + incomingCommit);                    
+                    if(branchDir.isDirectory()){
+                        File[] branchFiles = branchDir.listFiles();
+                        for(String newFile : newFiles){
+                            for(File branchFile : branchFiles){
+                                if(newFile.equals(branchFile.getName())){
+                                    System.out.println("New File found: " + newFile);
+                                    
+                                    try{
+                                        // Copy file to master
+                                        Path sourceFilePath = Paths.get(branchFile.getAbsolutePath());
+                                        System.out.println(sourceFilePath);
+                                        Path destinationPath = Paths.get(currentDirPath);
+                                        Files.copy(sourceFilePath, destinationPath , StandardCopyOption.REPLACE_EXISTING);
+                                        System.out.println("New File Successfully Copied to main Directory");
+                                    } catch(IOException e){
+                                        System.err.println("Error while copying incoming file to master:");
+                                        e.printStackTrace();
+                                        return;
+                                        
+                                    }
+                                }
+                            }
+                        }
+                    } else{
+                        System.out.println("Sorry! Branch Directory specified is not a directory");
+                        
+                    }
+                                            
+                }
     }
 
 
@@ -1672,18 +1728,18 @@ public class Main {
                     allBranchesSimilar = false;
                 }
 
-                System.out.println("All branches similar? " + allBranchesSimilar);
-                System.out.println("Change present in master? " + doesMasterContainChanges);
-                System.out.println("Change present in incoming? " + doesIncomingContainChanges);
+                // Sets to track new files
+                Set<String> masterKeySet = masterFileMapper.keySet();
+                Set<String> incomingKeySet = incomingFileMapper.keySet();
 
                 // Check for conflict cases
                 File branchFolder = new File(currentDirPath + "\\.minigit\\" + incomingBranch);
                 // Case 1: No change in both incoming or master, base = incoming = master
                 if(allBranchesSimilar){// Delete the branch
                     System.out.println("Base = Incoming = Master\n Deleting branch...");
-                    
+                    detectNewFiles(masterKeySet, incomingKeySet, incomingBranch, incomingCommit);
                     deleteBranch(branchFolder); // Recursively deletes the contents
-                    removerDivCommit();
+                    removerDivCommit();                    
                     System.out.println("Successfully deleted branch.");
                     return;
 
@@ -1693,8 +1749,9 @@ public class Main {
                 if((doesMasterContainChanges == true) && (doesIncomingContainChanges == false)){
                     System.out.println("Base = incoming, base != master");
                     System.out.println("Only master has changed, accepting master.\n Deleting branch...");
+                    detectNewFiles(masterKeySet, incomingKeySet, incomingBranch, incomingCommit);
                     deleteBranch(branchFolder); // Recursively deletes the contents
-                    removerDivCommit();
+                    removerDivCommit();                    
                     System.out.println("Successfully deleted branch.");
                     return;
 
@@ -1705,7 +1762,7 @@ public class Main {
                     System.out.println("Base = master, base != incoming");
                     System.out.println("Only incoming has changed, accepting incoming. \n Fast forwarding to incoming...");
                     
-                   try{
+                   try{                    
                     //Switch to the other branch
                     switchBranch();
                     
@@ -1731,7 +1788,7 @@ public class Main {
                     } else{
                         System.err.println("Error! Could not rename reference file");
                     }
-                    removerDivCommit();
+                    removerDivCommit();                    
 
                     System.out.println("Fast Forward Complete.");
                     return;
@@ -1743,14 +1800,7 @@ public class Main {
                 
                 if(doesIncomingContainChanges && doesMasterContainChanges){
                     //Determine if the final result is the same or not
-                    Boolean isIdentical = true; // Checks if incoming and master are identical
-                    Set<String> masterKeySet = masterFileMapper.keySet();
-                    Set<String> incomingKeySet = incomingFileMapper.keySet();
-                    
-                    if(masterKeySet.size() != incomingKeySet.size()){ // If key size is different then master and incoming are not identical, conflict
-                        conflictHandler( branchFolder ,masterFileContentTable, incomingFileContentTable); // Case 5: Changes present in both resulting to different outcomes, conflict
-                        return;
-                    }
+                    Boolean isIdentical = true; // Checks if incoming and master are identical                                        
 
                     for(String masterKey : masterKeySet){
 
@@ -1769,7 +1819,7 @@ public class Main {
                     }
 
                     if(isIdentical == false){
-                        conflictHandler( branchFolder ,masterFileContentTable, incomingFileContentTable); // Case 5: Changes present in both resulting to different outcomes, conflict
+                        conflictHandler( incomingCommit, branchFolder ,masterFileContentTable, incomingFileContentTable); // Case 5: Changes present in both resulting to different outcomes, conflict                        
                         return;
                     }
 
@@ -1777,8 +1827,9 @@ public class Main {
                     // Case 4: Changes present in both but same result, accept master
                     System.out.println("Base != incoming, base != master but master = incoming");
                     System.out.println("Both master and incoming have changed but have the same result.\n Deleting branch...");
+                    detectNewFiles(masterKeySet, incomingKeySet, incomingBranch, incomingCommit);
                     deleteBranch(branchFolder); // Recursively deletes the contents
-                    removerDivCommit();
+                    removerDivCommit();                    
                     System.out.println("Successfully deleted branch.");
                     return;
                 }
