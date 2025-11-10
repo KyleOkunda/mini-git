@@ -299,9 +299,10 @@ public class Main {
 
         return isModified;
 
+
     }
 
-    //Overload to remove the functionality for untracked files
+    //Overload for return value
     static Boolean getStatus(Boolean isSwitching){
         
         Boolean isModified = false;
@@ -355,16 +356,27 @@ public class Main {
                                 String prevCommit = null;
                                 if(commitsArray.size() > 0){ //Check if there is a previous commit
                                    prevCommit = commitsArray.getLast().split(" ")[0];
-                                   if(prevCommit.contains(".div")){
-                                    prevCommit = prevCommit.split("\\.")[0];
-                                   }
+
+                                    if(prevCommit.contains(".")){
+                                        prevCommit = prevCommit.split("\\.")[0];
+                                    }
+
                                 } else{
                                     
-                                    return null;
+                                    isModified = null;
+                                    return isModified;
                                 }
 
-                                // Read contents                            
-                                BufferedReader commitFileReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\"+ Main.getBranchName() + "\\"  + prevCommit + "\\" + file.getName()));
+                                // Read contents
+                                //Check if file exists in previous commit
+                                File commitFile = new File(currentDirPath + "\\.minigit\\"+ Main.getBranchName() + "\\" + prevCommit + "\\" + file.getName());
+                                if(!commitFile.isFile()){
+                                    
+                                    System.out.print("Untracked file present. ");
+                                    isModified = true;
+                                    return isModified;
+                                }
+                                BufferedReader commitFileReader = new BufferedReader(new FileReader(currentDirPath + "\\.minigit\\"+ Main.getBranchName()+ "\\"  + prevCommit + "\\" + file.getName()));
                                 String commitedContent = "";
                                                                   
                                 while(stillReading){
@@ -389,10 +401,11 @@ public class Main {
 
                     }
         } catch(IOException e){
-            System.err.println("Error occured while checking status whwn switching: " + "\n" + e);
+            System.err.println("Error occured while checking status during switching: " + "\n" + e);
         }
 
         return isModified;
+
 
     }
 
@@ -889,25 +902,20 @@ public class Main {
                         }
 
                     }
-                    for(String f : newFiles){
-                        System.out.println(f);
-                    }
-                
+
                     File branchDir = new File(currentDirPath + "\\.minigit\\" + incomingBranch + "\\" + incomingCommit);                    
                     if(branchDir.isDirectory()){
                         File[] branchFiles = branchDir.listFiles();
                         for(String newFile : newFiles){
                             for(File branchFile : branchFiles){
-                                if(newFile.equals(branchFile.getName())){
-                                    System.out.println("New File found: " + newFile);
+                                if(newFile.equals(branchFile.getName())){                                    
                                     
                                     try{
                                         // Copy file to master
-                                        Path sourceFilePath = Paths.get(branchFile.getAbsolutePath());
-                                        System.out.println(sourceFilePath);
-                                        Path destinationPath = Paths.get(currentDirPath);
+                                        Path sourceFilePath = Paths.get(branchFile.getAbsolutePath());                                        
+                                        Path destinationPath = Paths.get(currentDirPath, branchFile.getName());                                        
                                         Files.copy(sourceFilePath, destinationPath , StandardCopyOption.REPLACE_EXISTING);
-                                        System.out.println("New File Successfully Copied to main Directory");
+                                        System.out.println("New File:" + newFile + " Successfully Copied to main Directory");
                                     } catch(IOException e){
                                         System.err.println("Error while copying incoming file to master:");
                                         e.printStackTrace();
@@ -939,7 +947,8 @@ public class Main {
             System.out.println("commit: \n To create a snapshot of the state of the project");
             System.out.println("log: \n To view commit history");
             System.out.println("checkout: \n To checkout a previous commit");
-            
+            System.out.println("branch: \n To check existing branches and view current branch. \n With third argument it used to create a new branch.");
+            System.out.println("switch: \n To switch between branches");
             return;
         }
 
@@ -1490,6 +1499,13 @@ public class Main {
                 return;
             } else{
 
+                //Ensure working tree is clean before merge
+                Boolean isModified = Main.getStatus(true);
+                if(isModified){
+                    System.out.println("Please commit changes before merge.");
+                    return;
+                }
+
                 //Ensure user is on master before merging                
                 String branch = Main.getBranchName();
                 if(!branch.equals("master")){
@@ -1765,6 +1781,7 @@ public class Main {
                    try{                    
                     //Switch to the other branch
                     switchBranch();
+                    detectNewFiles(incomingKeySet, masterKeySet, "master", masterCommit);
                     
                      // Delete Master
                     File master = new File(currentDirPath + "\\.minigit\\master");
