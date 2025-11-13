@@ -6,6 +6,10 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
 
+import .minigit.master.773eb8a3ac.CommitObj;
+import .minigit.master.773eb8a3ac.Editor;
+import .minigit.master.773eb8a3ac.Hash;
+
 public class Main {
     static Boolean isCommitted = false;
     static ArrayList<String> stagingArea = new ArrayList<>();
@@ -1218,7 +1222,11 @@ public class Main {
                             String cid = commit[0];
                             String message  = commit[2];
                             message = message.replace(",", " ");
+                            String currentTime = commit[3];
+                            String date = currentTime.split("T")[0];
+                            String time = currentTime.split("T")[1].split("\\.")[0];
                             System.out.println( cid + " " + message);
+                            System.out.println("Commt: " + cid + "\t Date: " + date + " Time: " + time + "\n\t" + message + "\n");
 
                             
                         }
