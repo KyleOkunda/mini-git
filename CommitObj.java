@@ -123,6 +123,8 @@ public class CommitObj {
                 writerToCommitObj.write(commitId + " ");
                 writerToCommitObj.write(prevCommitId + " ");
                 writerToCommitObj.write(commitMessage + " ");
+                writerToCommitObj.write(currentTime + " ");
+
 
                 for(File file : commitedFiles){ // Dedicated for loop to prevent resource conflict
                     writerToCommitObj.write(file.getName() + " ");
