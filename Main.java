@@ -1218,7 +1218,11 @@ public class Main {
                             String cid = commit[0];
                             String message  = commit[2];
                             message = message.replace(",", " ");
-                            System.out.println( cid + " " + message);
+                            String currentTime = commit[3];
+                            String date = currentTime.split("T")[0];
+                            String time = currentTime.split("T")[1].split("\\.")[0];
+                            //System.out.println( cid + " " + message);
+                            System.out.println("Commt: " + cid + "\t Date: " + date + " Time: " + time + "\n\t" + message + "\n");
 
                             
                         }

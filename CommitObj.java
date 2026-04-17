@@ -6,6 +6,7 @@ public class CommitObj {
     private String commitId;
     private String prevCommitId;
     private String commitMessage;
+    String currentTime;
     private ArrayList<File> commitedFiles;
 
     CommitObj(String message, ArrayList<File> files){
@@ -14,8 +15,7 @@ public class CommitObj {
         Hash commitIdGen = new Hash();
 
         //Get current time for commit Id generation
-        LocalDateTime now = LocalDateTime.now();
-        String currentTime = now.toString();
+        LocalDateTime now = LocalDateTime.now();         
 
         message = message.replace(" ", ",");
 
@@ -29,9 +29,11 @@ public class CommitObj {
         }
         
         //Assign attributes
+        currentTime = now.toString();
         commitMessage = "\"" + message + "\"";
         commitedFiles = files;
         commitId = commitIdGen.shaHash(currentTime);
+        
 
         //Generate commitId
         //Check if a previous commit exists then increment its id
@@ -48,6 +50,7 @@ public class CommitObj {
                 writerToCommitObj.write(commitId + " ");
                 writerToCommitObj.write(prevCommitId + " ");
                 writerToCommitObj.write(commitMessage + " ");
+                writerToCommitObj.write(currentTime + " ");
 
                 for(File file : commitedFiles){ // Dedicated for loop to prevent resource conflict
                     writerToCommitObj.write(file.getName() + " ");
@@ -120,6 +123,8 @@ public class CommitObj {
                 writerToCommitObj.write(commitId + " ");
                 writerToCommitObj.write(prevCommitId + " ");
                 writerToCommitObj.write(commitMessage + " ");
+                writerToCommitObj.write(currentTime + " ");
+
 
                 for(File file : commitedFiles){ // Dedicated for loop to prevent resource conflict
                     writerToCommitObj.write(file.getName() + " ");
